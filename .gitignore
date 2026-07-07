@@ -18,3 +18,24 @@ coverage/
 .env.local
 .env.*
 !.env.example
+
+# secrets and local overrides
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+secrets.*
+secret.*
+credentials.*
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+dump.rdb
+
+# local tool and deployment overrides
+.vscode/settings.json
+.idea/
+.turbo/
