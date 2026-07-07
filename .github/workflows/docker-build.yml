@@ -1,0 +1,42 @@
+name: Docker Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  docker-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: local/book-slost-backend:latest
+
+      - name: Build admin image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./admin_frontend
+          file: ./admin_frontend/Dockerfile
+          push: false
+          tags: local/book-slost-admin:latest
+
+      - name: Build client image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./client_frontend
+          file: ./client_frontend/Dockerfile
+          push: false
+          tags: local/book-slost-client:latest

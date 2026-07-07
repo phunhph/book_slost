@@ -1,0 +1,28 @@
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+
+class RegisterLocalRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    username: str | None = Field(default=None, min_length=3, max_length=100)
+    display_name: str | None = Field(default=None, max_length=150)
+
+
+class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    email: EmailStr
+    auth_provider: str
+    role: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class RegisterLocalResponse(BaseModel):
+    user: UserResponse
+    message: str = "User registered successfully."
