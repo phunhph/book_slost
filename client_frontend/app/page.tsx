@@ -14,7 +14,7 @@ export default function HomePage() {
       <div className="mt-10">
         <Card>
           <h2 className="text-xl font-semibold text-slate-900">Public route</h2>
-          <p className="mt-3 text-sm text-slate-600">Sau khi admin dat username, mo route `/{username}` de xem profile cong khai.</p>
+          <p className="mt-3 text-sm text-slate-600">Sau khi admin dat username, mo route /[username] de xem profile cong khai.</p>
         </Card>
       </div>
     </section>
