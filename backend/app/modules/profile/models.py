@@ -36,6 +36,9 @@ class UserProfile(Base):
     bg_value: Mapped[str | None] = mapped_column(Text, default="#FFFFFF", nullable=True)
     avatar_style: Mapped[str] = mapped_column(String(50), default="circle", nullable=False)
     button_style: Mapped[str] = mapped_column(String(50), default="filled", nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    zalo: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    messenger: Mapped[str | None] = mapped_column(String(100), nullable=True)
     layout_structure: Mapped[list[dict]] = mapped_column(JSONB, default=lambda: DEFAULT_LAYOUT.copy(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

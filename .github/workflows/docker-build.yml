@@ -33,6 +33,14 @@ jobs:
           push: false
           tags: local/book-slost-admin:latest
 
+      - name: Build KOL image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./kol_frontend
+          file: ./kol_frontend/Dockerfile
+          push: false
+          tags: local/book-slost-kol:latest
+
       - name: Build client image
         uses: docker/build-push-action@v6
         with:

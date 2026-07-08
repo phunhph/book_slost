@@ -1,15 +1,13 @@
 import type { Config } from "tailwindcss";
 
-const config: Config = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./features/**/*.{js,ts,jsx,tsx,mdx}"
-  ],
+export default {
+  content: ["./index.html", "./src/**/*.{vue,ts,tsx}"],
   theme: {
-    extend: {}
+    extend: {
+      boxShadow: {
+        glow: "0 24px 80px rgba(15, 23, 42, 0.18)",
+      },
+    },
   },
-  plugins: []
-};
-
-export default config;
+  plugins: [],
+} satisfies Config;

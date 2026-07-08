@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -8,19 +9,6 @@ ALLOWED_THEME_MODES = {"light", "dark", "custom"}
 ALLOWED_BG_TYPES = {"color", "gradient", "image"}
 ALLOWED_AVATAR_STYLES = {"circle", "square", "rounded"}
 ALLOWED_BUTTON_STYLES = {"filled", "outline", "shadow"}
-ALLOWED_BLOCK_IDS = {"media_block", "booking_block", "products_block", "affiliate_block"}
-
-
-class LayoutBlock(BaseModel):
-    id: str
-    active: bool = True
-
-    @field_validator("id")
-    @classmethod
-    def validate_block_id(cls, value: str) -> str:
-        if value not in ALLOWED_BLOCK_IDS:
-            raise ValueError(f"Unsupported block id: {value}")
-        return value
 
 
 class UserProfileUpdateRequest(BaseModel):
@@ -36,7 +24,10 @@ class UserProfileUpdateRequest(BaseModel):
     bg_value: str | None = None
     avatar_style: str | None = None
     button_style: str | None = None
-    layout_structure: list[LayoutBlock] | None = None
+    phone: str | None = Field(default=None, max_length=30)
+    zalo: str | None = Field(default=None, max_length=100)
+    messenger: str | None = Field(default=None, max_length=100)
+    layout_structure: dict[str, Any] | None = None
 
     @field_validator("theme_mode")
     @classmethod
@@ -83,6 +74,9 @@ class UserProfileResponse(BaseModel):
     bg_value: str | None
     avatar_style: str
     button_style: str
-    layout_structure: list[LayoutBlock]
+    phone: str | None
+    zalo: str | None
+    messenger: str | None
+    layout_structure: dict[str, Any]
     created_at: datetime
     updated_at: datetime

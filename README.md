@@ -1,205 +1,139 @@
 ﻿# book_slost
 
-Fullstack phase 1 scaffold cho he thong affiliate + booking.
+Fullstack affiliate + booking platform voi 3 frontend Vue 3 tach role.
 
-## Thanh phan trong repo
-- `backend/`: FastAPI + PostgreSQL + Alembic
-- `admin_frontend/`: Next.js project rieng cho admin
-- `client_frontend/`: Next.js project rieng cho client/public
-- `fromt_be/`: tai lieu instruction backend
-- `fromt_fe/`: tai lieu instruction frontend
+## Kien truc
 
-## Kien truc UI
-- `admin_frontend/`: register, login placeholder, dashboard, edit profile
-- `client_frontend/`: public-facing profile theo `username`
+| App | Port | Stack | Vai tro |
+|-----|------|-------|---------|
+| `admin_frontend` | 3000 | Vue 3 + Vite | Backoffice SB Admin: quan ly danh sach KOL, khach hang, booking |
+| `kol_frontend` | 3002 | Vue 3 + Vite | Workspace KOL: custom profile, booking, calendar, lich su, bao cao |
+| `client_frontend` | 3001 | Vue 3 + Vite | Public site: danh sach KOL, profile custom, dat lich |
+| `backend` | 8000 | FastAPI + PostgreSQL | API, auth, booking, profile |
 
-## Chuc nang hien co
-- dang ky user qua backend
-- tu tao `user_profiles` khi dang ky
-- admin UI rieng de edit profile
-- client UI rieng de render public profile
-- dynamic layout block lay tu backend
-- cau hinh mau sac, nen, font, button style tu du lieu profile
+## Phan quyen
 
-## Database mac dinh
-- database: `affiliate_booking_core`
-- bang chinh: `users`
-- bang chinh: `user_profiles`
+| Role | App | Quyen chinh |
+|------|-----|-------------|
+| `admin` | Admin (3000) | Xem dashboard, danh sach KOL/khach/booking |
+| `kol` | KOL workspace (3002) | Sua profile, nhan booking, calendar, bao cao |
+| `customer` | Client (3001) | Xem KOL, dat lich, autofill thong tin khi da login |
+| Vang lai | Client (3001) | Xem KOL, dat lich bang SDT/Zalo/Messenger |
 
-## API backend hien co
-- `GET /health`
-- `POST /api/auth/register-local`
-- `GET /api/profiles/by-user/{user_id}`
-- `PUT /api/profiles/by-user/{user_id}`
-- `GET /api/profiles/public/{username}`
+## Tai khoan seed (local/dev)
 
-## Chay backend local, khong can Docker
-Backend co the chay local binh thuong. Docker chi la tuy chon.
+| Role | Email | Mat khau | Username |
+|------|-------|----------|----------|
+| admin | `admin@example.com` | `Admin@123` | `admin-demo` |
+| kol | `creator@example.com` | `Creator@123` | `creator-demo` |
+| customer | `customer@example.com` | `Customer@123` | `customer-demo` |
 
-Yeu cau:
-- Python `3.11+`
-- PostgreSQL local
-- tao database `affiliate_booking_core`
-
-Vao thu muc `backend/`:
-
-```bash
-python -m venv .venv
-```
-
-Kich hoat virtualenv:
+## Chay backend
 
 ```powershell
-# Windows PowerShell
+cd backend
 .venv\Scripts\Activate.ps1
-```
-
-```bash
-# macOS / Linux
-source .venv/bin/activate
-```
-
-Cai dependency:
-
-```bash
 pip install -r requirements.txt
-```
-
-Kiem tra file `backend/.env` va sua lai neu can:
-
-```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=affiliate_booking_core
-```
-
-Chay migration va seed:
-
-```bash
 alembic upgrade head
-```
-
-Lenh tren se:
-- tao bang
-- seed du lieu mau
-
-Du lieu seed mac dinh:
-- `admin@example.com` / username `admin-demo`
-- `creator@example.com` / username `creator-demo`
-
-Luu y:
-- password trong seed chi la placeholder de demo data
-- seed nay dung de test UI va API, khong phai account dang nhap that
-
-Chay API:
-
-```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Backend URL:
-- `http://localhost:8000`
-- health check: `http://localhost:8000/health`
+## Chay frontend
 
-## Chay backend bang Docker
-Neu may co Docker, ban co the chay theo cach nay:
+### Mot lenh (client 3001 + KOL 3002)
 
-```bash
-cd backend
-docker compose up --build
+```powershell
+# Tu thu muc goc repo
+npm install
+npm run install:frontends
+npm run dev
 ```
 
-Sau khi DB va API da len, chay migration:
+### Mot lenh (ca 3 frontend)
 
-```bash
-alembic upgrade head
+```powershell
+npm install
+npm run install:all
+npm run dev:all
 ```
 
-## Chay admin UI
-Vao thu muc `admin_frontend/`:
+### Tung app rieng
 
-```bash
+```powershell
+# Admin backoffice
+cd admin_frontend
+npm install
+npm run dev
+
+# KOL workspace
+cd kol_frontend
+npm install
+npm run dev
+
+# Public client
+cd client_frontend
 npm install
 npm run dev
 ```
 
-Admin UI URL:
-- `http://localhost:3000`
+URLs:
+- Admin: http://localhost:3000
+- Client: http://localhost:3001
+- KOL: http://localhost:3002
+- API: http://localhost:8000
 
-File env:
-- `admin_frontend/.env.local`
+## Env frontend
 
-Gia tri mac dinh:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here.apps.googleusercontent.com
-NEXT_PUBLIC_ENV=development
-NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:3001
-```
-
-## Chay client UI
-Vao thu muc `client_frontend/`:
-
-```bash
-npm install
-npm run dev
-```
-
-Client UI URL:
-- `http://localhost:3001`
-
-File env:
-- `client_frontend/.env.local`
-
-Gia tri mac dinh:
+Moi app co `.env.example`. Copy thanh `.env` hoac `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
-NEXT_PUBLIC_ENV=development
+VITE_API_URL=http://localhost:8000/api
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-## Test nhanh end-to-end
-1. Chay PostgreSQL local.
-2. Chay backend bang local Python va `alembic upgrade head`.
-3. Chay `admin_frontend` bang `npm run dev`.
-4. Chay `client_frontend` bang `npm run dev`.
-5. Mo `http://localhost:3000/register`.
-6. Tao user moi.
-7. Sau khi dang ky xong, admin UI luu `user_id` vao `localStorage` va chuyen sang `/edit-profile`.
-8. Cap nhat `username`, `bio`, mau sac, background, layout block roi bam luu.
-9. Mo `http://localhost:3001/{username}` de xem profile cong khai.
+## API chinh
 
-Test nhanh voi seed:
-- public profile demo: `http://localhost:3001/creator-demo`
+### Auth
+- `POST /api/auth/login-local`
+- `POST /api/auth/register-local`
+- `GET /api/auth/me`
+- `GET /auth/google?app=admin|kol|client`
+- `GET /auth/callback`
 
-## Ghi chu hien trang
-- `admin_frontend/login` dang la placeholder vi backend chua co JWT login that
-- admin UI hien dung `localStorage` de noi nhanh voi backend phase 1
-- neu muon production-ready hon, buoc tiep theo nen them login, access token, refresh token va auth guard
+### Admin (role admin)
+- `GET /api/admin/dashboard`
+- `GET /api/admin/kols`
+- `GET /api/admin/customers`
+- `GET /api/admin/bookings`
+
+### KOL (role kol)
+- `GET /api/kol/dashboard`
+- `GET /api/kol/bookings`
+- `PATCH /api/kol/bookings/{id}`
+
+### Public / Booking
+- `GET /api/public/kols`
+- `GET /api/profiles/public/{username}`
+- `POST /api/bookings` (guest hoac Bearer token)
+
+## Luong booking
+
+1. Khach vao `client_frontend` -> chon KOL -> xem profile custom
+2. Chua login: nhap SDT (bat buoc), Zalo, Messenger, thoi gian dat
+3. Da login: he thong tu lay phone/zalo/messenger tu profile
+4. KOL xem booking tai `kol_frontend` -> calendar / lich su / cap nhat trang thai
+5. Admin xem toan bo tai `admin_frontend`
+
+## Test nhanh
+
+1. `alembic upgrade head`
+2. Chay backend + 3 frontend
+3. Admin login: `admin@example.com` / `Admin@123`
+4. KOL login: `creator@example.com` / `Creator@123`
+5. Client: mo http://localhost:3001 -> xem `creator-demo` -> dat lich
+6. Customer login: `customer@example.com` / `Customer@123` -> dat lich autofill
 
 ## CI/CD
-Repo da co cac workflow sau:
 
-- `.github/workflows/ci.yml`
-  - backend: compile check + `pytest`
-  - `admin_frontend`: lint + build
-  - `client_frontend`: lint + build
-
-- `.github/workflows/docker-build.yml`
-  - build Docker image cho `backend`
-  - build Docker image cho `admin_frontend`
-  - build Docker image cho `client_frontend`
-
-- `.github/workflows/codeql.yml`
-  - GitHub CodeQL cho Python va JavaScript
-  - quet code quality va security theo push / PR / schedule
-
-Dieu nay giup repo co day du:
-- build check
-- test backend
-- lint frontend
-- docker build check
-- GitHub code scanning
+- `.github/workflows/ci.yml`: pytest backend + build 3 frontend Vue
+- `.github/workflows/docker-build.yml`: build Docker images backend + admin + kol + client
