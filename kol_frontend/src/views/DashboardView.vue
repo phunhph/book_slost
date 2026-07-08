@@ -1,16 +1,29 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import BookingDetailModal from '../components/bookings/BookingDetailModal.vue'
 import StatCard from '../components/ui/StatCard.vue'
 import { getKolBookings, getKolDashboard } from '../services/api'
 import type { Booking, DashboardStats } from '../types'
-import { formatDateTime } from '../utils/format'
+import { formatDateTime, formatStatus } from '../utils/format'
 
 const stats = ref<DashboardStats | null>(null)
 const bookings = ref<Booking[]>([])
 const loading = ref(true)
+const selected = ref<Booking | null>(null)
+const detailOpen = ref(false)
 
 const nextBookings = computed(() => bookings.value.slice(0, 5))
+
+function openDetail(booking: Booking) {
+  selected.value = booking
+  detailOpen.value = true
+}
+
+function closeDetail() {
+  detailOpen.value = false
+  selected.value = null
+}
 
 onMounted(async () => {
   try {
@@ -83,22 +96,29 @@ onMounted(async () => {
         </div>
 
         <div v-else class="mt-6 space-y-3">
-          <div
+          <button
             v-for="booking in nextBookings"
             :key="booking.id"
-            class="rounded-3xl border border-white/8 bg-white/4 p-4"
+            type="button"
+            class="w-full rounded-3xl border border-white/8 bg-white/4 p-4 text-left transition hover:border-fuchsia-300/30 hover:bg-fuchsia-500/8"
+            @click="openDetail(booking)"
           >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="min-w-0">
-                <p class="truncate font-medium text-white">{{ booking.guest_name || booking.customer_email || 'Khách đặt lịch' }}</p>
+                <div class="flex flex-wrap items-center gap-2">
+                  <p class="truncate font-medium text-white">
+                    {{ booking.guest_name || booking.customer_email || 'Khách đặt lịch' }}
+                  </p>
+                  <span class="text-[11px] text-slate-500">Xem chi tiết →</span>
+                </div>
                 <p class="mt-1 text-sm text-slate-400">{{ formatDateTime(booking.scheduled_at) }}</p>
               </div>
               <span class="w-fit rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-3 py-1 text-xs uppercase tracking-[0.25em] text-fuchsia-200">
-                {{ booking.status }}
+                {{ formatStatus(booking.status) }}
               </span>
             </div>
             <p v-if="booking.notes" class="mt-3 text-sm text-slate-300">{{ booking.notes }}</p>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -123,5 +143,7 @@ onMounted(async () => {
         </div>
       </div>
     </section>
+
+    <BookingDetailModal :open="detailOpen" :booking="selected" @close="closeDetail" />
   </div>
 </template>

@@ -31,6 +31,10 @@ class Booking(Base):
     payment_qr_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     payment_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     payment_status: Mapped[str] = mapped_column(String(30), default="unpaid", nullable=False)
+    payment_proof_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payment_proof_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    payment_proof_uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    payment_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

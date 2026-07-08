@@ -27,6 +27,10 @@
           <label class="mb-2 block text-sm font-semibold text-slate-700">Mật khẩu</label>
           <input v-model="password" type="password" required class="field" placeholder="••••••••" />
         </div>
+        <label class="flex items-center gap-2 text-sm text-slate-600">
+          <input v-model="rememberMe" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
+          Ghi nhớ email & mật khẩu
+        </label>
         <p v-if="auth.error" class="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ auth.error }}</p>
         <button type="submit" class="btn-primary w-full" :disabled="auth.loading">
           {{ auth.loading ? "Đang xử lý..." : "Đăng nhập" }}
@@ -41,17 +45,29 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { getGoogleOAuthUrl } from "@/api/auth";
-import { useAuthStore } from "@/stores/auth";
+import {
+  clearRememberedCredentials,
+  readRememberedCredentials,
+  saveRememberedCredentials,
+  useAuthStore,
+} from "@/stores/auth";
 
 const auth = useAuthStore();
 const router = useRouter();
-const email = ref("admin@example.com");
-const password = ref("Admin@123");
+const remembered = readRememberedCredentials();
+const email = ref(remembered?.email || "admin@example.com");
+const password = ref(remembered?.password || "Admin@123");
+const rememberMe = ref(Boolean(remembered));
 const googleUrl = getGoogleOAuthUrl();
 
 async function handleSubmit() {
   try {
     await auth.login(email.value, password.value);
+    if (rememberMe.value) {
+      saveRememberedCredentials(email.value.trim(), password.value);
+    } else {
+      clearRememberedCredentials();
+    }
     router.push("/dashboard");
   } catch {
     // error handled in store

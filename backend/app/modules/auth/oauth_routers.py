@@ -121,7 +121,7 @@ def google_oauth_callback(
     except ValueError as exc:
         return redirect_with_error(app_target, str(exc))
 
-    access_token = create_access_token(user.id)
+    access_token, _expires_in, _expires_at = create_access_token(user.id, user.role)
     callback_url = settings.frontend_callback_url(app_target)
     query = urlencode({"access_token": access_token})
     return RedirectResponse(f"{callback_url}?{query}", status_code=status.HTTP_302_FOUND)

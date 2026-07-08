@@ -39,9 +39,8 @@ onMounted(async () => {
       message.value = "Tài khoản không có quyền admin.";
       return;
     }
-    auth.token = accessToken;
+    auth.acceptOAuthToken(accessToken);
     auth.user = user;
-    localStorage.setItem("abc_access_token", accessToken);
     router.replace("/dashboard");
   } catch (err) {
     message.value = getErrorMessage(err, "Đăng nhập Google thất bại.");

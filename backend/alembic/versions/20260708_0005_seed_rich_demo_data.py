@@ -447,10 +447,10 @@ def upgrade() -> None:
     kol_by_id = {k["id"]: k for k in KOLS}
     kol_by_id[EXISTING_KOL_ID] = {
         "id": EXISTING_KOL_ID,
-        "bank_code": "970436",
-        "bank_account_number": "0123456789",
+        "bank_name": "MB Bank",
+        "bank_code": "970422",
+        "bank_account_number": "0962954690",
         "bank_account_name": "CREATOR DEMO",
-        "bank_name": "Vietcombank",
         "price_per_match": 150000,
         "price_per_hour": 100000,
     }

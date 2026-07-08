@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, watch } from "vue";
+import { RouterLink } from "vue-router";
 
 import { createBooking } from "@/services/bookings";
 import { useAuthStore } from "@/stores/auth";
@@ -55,6 +56,29 @@ const paymentResult = reactive<{
 }>({
   visible: false,
   booking: null,
+});
+
+function closePaymentModal() {
+  paymentResult.visible = false;
+}
+
+function onPaymentKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape" && paymentResult.visible) {
+    closePaymentModal();
+  }
+}
+
+watch(
+  () => paymentResult.visible,
+  (isOpen) => {
+    document.body.style.overflow = isOpen ? "hidden" : "";
+  },
+);
+
+onMounted(() => window.addEventListener("keydown", onPaymentKeydown));
+onUnmounted(() => {
+  window.removeEventListener("keydown", onPaymentKeydown);
+  document.body.style.overflow = "";
 });
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
@@ -419,44 +443,132 @@ async function submitBooking() {
       </button>
     </form>
 
-    <div
-      v-if="paymentResult.visible && paymentResult.booking"
-      class="mt-6 rounded-3xl border border-emerald-400/30 bg-emerald-500/10 p-5"
-    >
-      <p class="text-sm font-semibold text-emerald-200">Thanh toán booking (VietQR)</p>
-      <p class="mt-2 text-sm opacity-90">
-        Mã thanh toán: <strong>{{ paymentResult.booking.payment_code }}</strong>
-      </p>
-      <p class="mt-1 text-sm opacity-90">
-        Số tiền:
-        <strong>
-          {{ new Intl.NumberFormat('vi-VN').format(paymentResult.booking.total_amount) }}
-          {{ paymentResult.booking.currency }}
-        </strong>
-      </p>
-      <p class="mt-1 text-sm opacity-90">
-        Gói:
-        {{ paymentResult.booking.pricing_type === 'match' ? 'Theo trận' : 'Theo giờ' }}
-        × {{ paymentResult.booking.quantity }}
-      </p>
-      <p v-if="paymentResult.booking.bank_account_number" class="mt-1 text-sm opacity-90">
-        Nhận về:
-        {{ paymentResult.booking.bank_name || 'Ngân hàng' }} ·
-        {{ paymentResult.booking.bank_account_name }} ·
-        {{ paymentResult.booking.bank_account_number }}
-      </p>
+    <Teleport to="body">
+      <Transition name="pay-modal">
+        <div
+          v-if="paymentResult.visible && paymentResult.booking"
+          class="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/75 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+          @click.self="closePaymentModal"
+        >
+          <section
+            class="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-white/10 bg-[#0f172a] shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-modal-title"
+          >
+            <header class="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-white/8 bg-[#0f172a]/95 px-5 py-4 backdrop-blur">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-300">VietQR</p>
+                <h3 id="payment-modal-title" class="mt-2 text-xl font-semibold text-white">
+                  Thanh toán booking
+                </h3>
+              </div>
+              <button
+                type="button"
+                class="shrink-0 rounded-full border border-white/10 px-3 py-1.5 text-sm text-slate-300 transition hover:bg-white/5"
+                @click="closePaymentModal"
+              >
+                Đóng
+              </button>
+            </header>
 
-      <div v-if="paymentResult.booking.payment_qr_url" class="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-        <img
-          :src="paymentResult.booking.payment_qr_url"
-          alt="Mã VietQR thanh toán"
-          class="h-52 w-52 rounded-2xl border border-white/20 bg-white p-2"
-        />
-        <p class="max-w-sm text-sm opacity-85">
-          Quét bằng app ngân hàng để chuyển đúng số tiền và nội dung chứa. Trạng thái:
-          <strong>{{ paymentResult.booking.payment_status === 'unpaid' ? 'Chưa thanh toán' : paymentResult.booking.payment_status }}</strong>.
-        </p>
-      </div>
-    </div>
+            <div class="space-y-5 px-5 py-5">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Mã thanh toán</p>
+                  <p class="mt-2 font-semibold text-white">{{ paymentResult.booking.payment_code }}</p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Số tiền</p>
+                  <p class="mt-2 font-semibold text-emerald-200">
+                    {{ new Intl.NumberFormat('vi-VN').format(paymentResult.booking.total_amount) }}
+                    {{ paymentResult.booking.currency }}
+                  </p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Gói</p>
+                  <p class="mt-2 text-sm font-medium text-white">
+                    {{ paymentResult.booking.pricing_type === 'match' ? 'Theo trận' : 'Theo giờ' }}
+                    × {{ paymentResult.booking.quantity }}
+                  </p>
+                </div>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Trạng thái</p>
+                  <p class="mt-2 text-sm font-medium text-amber-100">
+                    {{ paymentResult.booking.payment_status === 'unpaid' ? 'Chưa thanh toán' : paymentResult.booking.payment_status }}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                v-if="paymentResult.booking.bank_account_number"
+                class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200"
+              >
+                <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Nhận về</p>
+                <p class="mt-2 font-medium text-white">
+                  {{ paymentResult.booking.bank_name || 'Ngân hàng' }}
+                </p>
+                <p class="mt-1">
+                  {{ paymentResult.booking.bank_account_name }} ·
+                  {{ paymentResult.booking.bank_account_number }}
+                </p>
+              </div>
+
+              <div
+                v-if="paymentResult.booking.payment_qr_url"
+                class="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5"
+              >
+                <img
+                  :src="paymentResult.booking.payment_qr_url"
+                  alt="Mã VietQR thanh toán"
+                  class="h-56 w-56 rounded-2xl border border-white/15 bg-white p-2"
+                />
+                <p class="text-center text-sm leading-6 text-slate-300">
+                  Quét bằng app ngân hàng để chuyển đúng số tiền và nội dung lệnh. Sau đó vào
+                  <strong class="text-white">Booking của tôi</strong> để gửi bill chuyển khoản.
+                </p>
+              </div>
+
+              <div class="flex flex-col gap-2 sm:flex-row">
+                <RouterLink
+                  to="/my-bookings"
+                  class="inline-flex flex-1 items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+                  @click="closePaymentModal"
+                >
+                  Gửi bill / xem booking
+                </RouterLink>
+                <button
+                  type="button"
+                  class="inline-flex flex-1 items-center justify-center rounded-full border border-white/15 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/5"
+                  @click="closePaymentModal"
+                >
+                  Để sau
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </Transition>
+    </Teleport>
   </section>
 </template>
+
+<style scoped>
+.pay-modal-enter-active,
+.pay-modal-leave-active {
+  transition: opacity 0.18s ease;
+}
+.pay-modal-enter-active section,
+.pay-modal-leave-active section {
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.pay-modal-enter-from,
+.pay-modal-leave-to {
+  opacity: 0;
+}
+.pay-modal-enter-from section,
+.pay-modal-leave-to section {
+  opacity: 0;
+  transform: translateY(14px) scale(0.98);
+}
+</style>

@@ -6,11 +6,27 @@ import jwt
 from app.core.config import get_settings
 
 
-def create_access_token(user_id: UUID) -> str:
+def resolve_token_ttl_minutes(role: str | None) -> int:
     settings = get_settings()
-    expire = datetime.now(UTC) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
-    payload = {"sub": str(user_id), "exp": expire}
-    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    normalized = (role or "").strip().lower()
+    if normalized in {"admin", "kol"}:
+        return settings.jwt_workspace_expire_minutes
+    # customer and any unknown role fall back to short client TTL
+    return settings.jwt_client_expire_minutes
+
+
+def create_access_token(user_id: UUID, role: str | None = None) -> tuple[str, int, datetime]:
+    """Return (token, expires_in_seconds, expires_at_utc)."""
+    settings = get_settings()
+    ttl_minutes = resolve_token_ttl_minutes(role)
+    expire = datetime.now(UTC) + timedelta(minutes=ttl_minutes)
+    payload = {
+        "sub": str(user_id),
+        "role": role,
+        "exp": expire,
+    }
+    token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return token, ttl_minutes * 60, expire
 
 
 def decode_access_token(token: str) -> UUID | None:

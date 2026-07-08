@@ -539,29 +539,30 @@ onMounted(loadProfile)
         <div class="mt-8 border-t border-white/10 pt-6">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p class="profile-form-section__title">Tài khoản ngân hàng (VietQR)</p>
+              <p class="profile-form-section__title">Tài khoản nhận tiền (VietQR)</p>
               <p class="mt-2 text-sm text-slate-400">
-                Bắt buộc nếu muốn khách nhận mã QR thanh toán khi booking. Thiếu STK sẽ không tạo được QR.
+                Bạn tự chọn ngân hàng và nhập STK của mình — không bị ép dùng một ngân hàng cố định.
+                Khách sẽ chuyển khoản vào đúng STK này khi đặt lịch.
               </p>
             </div>
             <span
               class="rounded-full px-3 py-1 text-xs font-medium"
               :class="hasBankConfigured ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200'"
             >
-              {{ hasBankConfigured ? 'Đã cấu hình QR' : 'Chưa cấu hình QR' }}
+              {{ hasBankConfigured ? 'Đã cấu hình nhận tiền' : 'Chưa cấu hình nhận tiền' }}
             </span>
           </div>
 
           <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div>
-              <label class="mb-2 block text-sm text-slate-300">Ngân hàng *</label>
+              <label class="mb-2 block text-sm text-slate-300">Ngân hàng của bạn *</label>
               <select
                 v-model="form.bank_code"
                 :class="fieldClass('bank_code')"
                 @blur="markTouched('bank_code')"
                 @change="validateField('bank_code'); validateField('bank_account_number'); validateField('bank_account_name')"
               >
-                <option value="">Chọn ngân hàng</option>
+                <option value="">Chọn ngân hàng bạn dùng</option>
                 <option v-for="bank in VN_BANKS" :key="bank.code" :value="bank.code">
                   {{ bank.name }}
                 </option>
@@ -569,13 +570,13 @@ onMounted(loadProfile)
               <p v-if="touched.bank_code && fieldErrors.bank_code" class="field-error">{{ fieldErrors.bank_code }}</p>
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-300">Số tài khoản *</label>
+              <label class="mb-2 block text-sm text-slate-300">Số tài khoản nhận tiền *</label>
               <input
                 v-model="form.bank_account_number"
                 :class="fieldClass('bank_account_number')"
                 type="text"
                 inputmode="numeric"
-                placeholder="0123456789"
+                placeholder="Nhập STK của bạn"
                 @blur="markTouched('bank_account_number')"
                 @input="validateField('bank_account_number')"
               />
@@ -596,7 +597,9 @@ onMounted(loadProfile)
               <p v-if="touched.bank_account_name && fieldErrors.bank_account_name" class="field-error">
                 {{ fieldErrors.bank_account_name }}
               </p>
-              <p class="mt-2 text-xs text-slate-500">Nên viết hoa không dấu, khớp tên trên ứng dụng ngân hàng.</p>
+              <p class="mt-2 text-xs text-slate-500">
+                Viết hoa không dấu, khớp tên trên app ngân hàng của bạn. Mỗi KOL dùng STK riêng của mình.
+              </p>
             </div>
           </div>
         </div>

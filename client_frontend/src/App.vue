@@ -9,13 +9,21 @@ import { useAuthStore } from "@/stores/auth";
 const authStore = useAuthStore();
 const authModalMode = ref<"login" | "register">("login");
 const authModalOpen = ref(false);
+const bootstrapped = ref(false);
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const currentUser = computed(() => authStore.userProfile ?? authStore.user);
 const authUser = computed(() => authStore.user);
 const isKolAccount = computed(() => authStore.user?.role === "kol");
+/** While restoring token after F5, keep header in "signed-in" layout to avoid login flash */
+const headerAuthenticated = computed(
+  () => authStore.isAuthenticated || (!authStore.isReady && authStore.hasStoredSession),
+);
 
 function openAuthModal(mode: "login" | "register") {
+  if (!authStore.isReady && authStore.hasStoredSession) {
+    return;
+  }
   authModalMode.value = mode;
   authModalOpen.value = true;
 }
@@ -24,15 +32,16 @@ function closeAuthModal() {
   authModalOpen.value = false;
 }
 
-onMounted(() => {
-  void authStore.initialize();
+onMounted(async () => {
+  await authStore.initialize();
+  bootstrapped.value = true;
 });
 </script>
 
 <template>
   <div class="min-h-screen bg-slate-950 text-slate-50">
     <AppHeader
-      :is-authenticated="isAuthenticated"
+      :is-authenticated="headerAuthenticated"
       :current-user="currentUser"
       :auth-user="authUser"
       :is-kol-account="isKolAccount"
@@ -41,7 +50,8 @@ onMounted(() => {
     />
 
     <main>
-      <RouterView @open-auth="openAuthModal" />
+      <RouterView v-if="bootstrapped || !authStore.hasStoredSession" @open-auth="openAuthModal" />
+      <div v-else class="page-container py-16 text-sm text-slate-400">Đang khôi phục phiên đăng nhập...</div>
     </main>
 
     <AuthModal

@@ -1,20 +1,21 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
+from app.core.uploads import save_payment_proof
 from app.modules.auth.deps import get_optional_user
 from app.modules.auth.models import User
-from app.modules.auth.role_deps import require_admin, require_kol
+from app.modules.auth.role_deps import require_admin, require_customer, require_kol
 from app.modules.auth.schemas import UserResponse
-from app.modules.booking.models import Booking
 from app.modules.booking.schemas import (
     BookingCreateRequest,
     BookingResponse,
     BookingStatusUpdateRequest,
     KolPublicCard,
+    PaymentReviewRequest,
 )
 from app.modules.booking.services import (
     create_booking,
@@ -22,8 +23,11 @@ from app.modules.booking.services import (
     get_dashboard_stats,
     get_kol_dashboard_stats,
     list_bookings_for_admin,
+    list_bookings_for_customer,
     list_bookings_for_kol,
     list_public_kols,
+    review_payment_proof,
+    submit_payment_proof,
     update_booking_status,
 )
 from app.modules.profile.models import UserProfile
@@ -58,7 +62,7 @@ admin_router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @admin_router.get("/dashboard")
-def admin_dashboard(_: User = Depends(require_admin), db: Session = Depends(get_db)) -> dict[str, int]:
+def admin_dashboard(_: User = Depends(require_admin), db: Session = Depends(get_db)) -> dict:
     return get_dashboard_stats(db)
 
 
@@ -122,6 +126,40 @@ def admin_list_bookings(_: User = Depends(require_admin), db: Session = Depends(
     return [BookingResponse.model_validate(item) for item in list_bookings_for_admin(db)]
 
 
+customer_router = APIRouter(prefix="/customer", tags=["customer"])
+
+
+@customer_router.get("/bookings", response_model=list[BookingResponse])
+def customer_list_bookings(
+    current_user: User = Depends(require_customer),
+    db: Session = Depends(get_db),
+) -> list[BookingResponse]:
+    return [
+        BookingResponse.model_validate(item)
+        for item in list_bookings_for_customer(db, current_user.id)
+    ]
+
+
+@customer_router.post("/bookings/{booking_id}/payment-proof", response_model=BookingResponse)
+async def customer_submit_payment_proof(
+    booking_id: UUID,
+    file: UploadFile = File(...),
+    note: str | None = Form(default=None),
+    current_user: User = Depends(require_customer),
+    db: Session = Depends(get_db),
+) -> BookingResponse:
+    try:
+        proof_url = await save_payment_proof(file)
+        submit_payment_proof(db, booking_id, current_user.id, proof_url, note)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    detail = get_booking_detail(db, booking_id)
+    if not detail:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found.")
+    return BookingResponse.model_validate(detail)
+
+
 kol_router = APIRouter(prefix="/kol", tags=["kol"])
 
 
@@ -150,6 +188,26 @@ def kol_update_booking_status(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="KOL account required.")
     try:
         update_booking_status(db, booking_id, payload.status, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    detail = get_booking_detail(db, booking_id)
+    if not detail:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found.")
+    return BookingResponse.model_validate(detail)
+
+
+@kol_router.patch("/bookings/{booking_id}/payment-review", response_model=BookingResponse)
+def kol_review_payment(
+    booking_id: UUID,
+    payload: PaymentReviewRequest,
+    current_user: User = Depends(require_kol),
+    db: Session = Depends(get_db),
+) -> BookingResponse:
+    if current_user.role != "kol":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="KOL account required.")
+    try:
+        review_payment_proof(db, booking_id, current_user.id, payload.action, payload.note)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 

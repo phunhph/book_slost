@@ -30,9 +30,9 @@ def upgrade() -> None:
     op.execute(
         """
         UPDATE user_profiles
-        SET bank_name = 'Vietcombank',
-            bank_code = '970436',
-            bank_account_number = '0123456789',
+        SET bank_name = 'MB Bank',
+            bank_code = '970422',
+            bank_account_number = '0962954690',
             bank_account_name = 'CREATOR DEMO'
         WHERE username = 'creator-demo'
         """

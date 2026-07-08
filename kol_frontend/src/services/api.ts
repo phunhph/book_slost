@@ -8,12 +8,18 @@ import type {
   UserProfile,
 } from '../types'
 
-export const TOKEN_KEY = 'abc_access_token'
+export const TOKEN_KEY = 'abc_kol_access_token'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export const googleOAuthUrl = `${API_BASE_URL}/auth/google?app=kol`
+
+export function resolveMediaUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  return `${API_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`
+}
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -64,6 +70,18 @@ export async function getKolBookings() {
 
 export async function updateBookingStatus(bookingId: string, status: string) {
   const { data } = await api.patch<Booking>(`/kol/bookings/${bookingId}`, { status })
+  return data
+}
+
+export async function reviewPaymentProof(
+  bookingId: string,
+  action: 'approve' | 'reject',
+  note?: string,
+) {
+  const { data } = await api.patch<Booking>(`/kol/bookings/${bookingId}/payment-review`, {
+    action,
+    note: note || undefined,
+  })
   return data
 }
 

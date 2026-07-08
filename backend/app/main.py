@@ -1,10 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
+from app.core.uploads import uploads_root
 from app.modules.auth.oauth_routers import router as oauth_router
 from app.modules.auth.routers import router as auth_router
-from app.modules.booking.routers import admin_router, kol_router, router as booking_router
+from app.modules.booking.routers import (
+    admin_router,
+    customer_router,
+    kol_router,
+    router as booking_router,
+)
 from app.modules.profile.routers import router as profile_router
 
 
@@ -24,10 +31,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+uploads_path = uploads_root()
+app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+
 app.include_router(oauth_router)
 app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(booking_router, prefix=settings.api_prefix)
 app.include_router(admin_router, prefix=settings.api_prefix)
+app.include_router(customer_router, prefix=settings.api_prefix)
 app.include_router(kol_router, prefix=settings.api_prefix)
 app.include_router(profile_router, prefix=settings.api_prefix)
 

@@ -27,7 +27,12 @@ class Settings(BaseSettings):
 
     jwt_secret_key: str = "change-me-in-production-use-long-random-string"
     jwt_algorithm: str = "HS256"
+    # Legacy default (workspace apps). Prefer role-specific TTLs below.
     jwt_access_token_expire_minutes: int = 60 * 24
+    # Client / customer sessions: 1 hour
+    jwt_client_expire_minutes: int = 60
+    # Admin + KOL workspace sessions: 1 day
+    jwt_workspace_expire_minutes: int = 60 * 24
 
     google_client_id: str = ""
     google_client_secret: str = ""

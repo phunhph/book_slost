@@ -9,8 +9,24 @@ export interface AuthUser {
 export interface AuthResponse {
   access_token: string;
   token_type: string;
+  expires_in?: number;
   user: AuthUser;
   message: string;
+}
+
+export interface RevenueSeries {
+  labels: string[];
+  gross: number[];
+  collected: number[];
+  booking_counts: number[];
+}
+
+export interface TopKolRevenue {
+  kol_user_id: string;
+  display_name: string;
+  username: string | null;
+  revenue: number;
+  bookings: number;
 }
 
 export interface DashboardStats {
@@ -18,6 +34,20 @@ export interface DashboardStats {
   total_customers: number;
   total_bookings: number;
   pending_bookings: number;
+  confirmed_bookings?: number;
+  completed_bookings?: number;
+  cancelled_bookings?: number;
+  currency?: string;
+  gross_revenue?: number;
+  collected_revenue?: number;
+  unpaid_revenue?: number;
+  month_gross_revenue?: number;
+  month_collected_revenue?: number;
+  year_gross_revenue?: number;
+  year_collected_revenue?: number;
+  revenue_by_month?: RevenueSeries;
+  revenue_by_year?: RevenueSeries;
+  top_kols_by_revenue?: TopKolRevenue[];
 }
 
 export interface KolRow {

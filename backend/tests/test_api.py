@@ -1,9 +1,11 @@
 from datetime import datetime
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.modules.auth.models import User
+from app.modules.booking.models import Booking
 
 
 def _auth_header(client: TestClient, email: str, password: str) -> dict[str, str]:
@@ -114,10 +116,16 @@ def test_admin_dashboard_requires_admin_role(client: TestClient, seed_users: dic
     payload = ok.json()
     assert payload["total_kols"] >= 2
     assert "pending_bookings" in payload
+    assert "collected_revenue" in payload
+    assert "revenue_by_month" in payload
+    assert "revenue_by_year" in payload
+    assert len(payload["revenue_by_month"]["labels"]) == 12
+    assert len(payload["revenue_by_year"]["labels"]) == 5
 
 
 def test_kol_can_update_own_booking_status(
     client: TestClient,
+    db_session: Session,
     seed_users: dict[str, User],
     future_schedule: datetime,
 ) -> None:
@@ -135,6 +143,18 @@ def test_kol_can_update_own_booking_status(
     assert created.status_code == 201
     booking_id = created.json()["id"]
 
+    blocked = client.patch(
+        f"/api/kol/bookings/{booking_id}",
+        headers=_auth_header(client, seed_users["kol"].email, "Creator@123"),
+        json={"status": "confirmed"},
+    )
+    assert blocked.status_code == 400
+
+    booking = db_session.get(Booking, UUID(booking_id))
+    assert booking is not None
+    booking.payment_status = "paid"
+    db_session.commit()
+
     kol_headers = _auth_header(client, seed_users["kol"].email, "Creator@123")
     updated = client.patch(
         f"/api/kol/bookings/{booking_id}",
@@ -143,6 +163,33 @@ def test_kol_can_update_own_booking_status(
     )
     assert updated.status_code == 200
     assert updated.json()["status"] == "confirmed"
+
+
+def test_customer_can_list_own_bookings(
+    client: TestClient,
+    seed_users: dict[str, User],
+    future_schedule: datetime,
+) -> None:
+    created = client.post(
+        "/api/bookings",
+        headers=_auth_header(client, seed_users["customer"].email, "Customer@123"),
+        json={
+            "kol_user_id": str(seed_users["kol"].id),
+            "scheduled_at": future_schedule.isoformat(),
+            "pricing_type": "match",
+            "quantity": 1,
+            "notes": "Customer history booking",
+        },
+    )
+    assert created.status_code == 201, created.text
+
+    customer_headers = _auth_header(client, seed_users["customer"].email, "Customer@123")
+    mine = client.get("/api/customer/bookings", headers=customer_headers)
+    assert mine.status_code == 200
+    rows = mine.json()
+    assert len(rows) >= 1
+    assert any(item["notes"] == "Customer history booking" for item in rows)
+    assert all(item["customer_user_id"] == str(seed_users["customer"].id) for item in rows)
 
 
 def test_profile_public_and_update(

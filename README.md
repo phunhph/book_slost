@@ -37,7 +37,10 @@ Sau migration `20260708_0005` co them data mau:
   - Mat khau chung: `Customer@123`
 - **22 booking** da dang trang thai: `pending` / `confirmed` / `completed` / `cancelled`, co/khong guest, da/chua thanh toan
 
-Tong khoang: **1 admin + 9 KOL + 6 customer + 22+ booking**.
+Tong khoang: **1 admin + 9 KOL + 6 customer + 50+ booking**.
+
+Rieng KOL `creator@example.com` (`creator-demo`) co them **30 booking** seed (`20260708_0006`) de test lich / booking / bao cao:
+pending, confirmed, completed, cancelled; co guest + customer; co da TT / chua TT; trai theo ngay (qua khu + sap toi).
 
 ## Chay backend
 

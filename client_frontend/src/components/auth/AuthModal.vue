@@ -5,7 +5,12 @@ import { useRoute } from "vue-router";
 import { getGoogleOAuthUrl } from "@/services/auth";
 import { redirectByRole, shouldRedirectAuthenticatedRole } from "@/lib/appUrls";
 import { getErrorMessage } from "@/lib/errors";
-import { useAuthStore } from "@/stores/auth";
+import {
+  clearRememberedCredentials,
+  readRememberedCredentials,
+  saveRememberedCredentials,
+  useAuthStore,
+} from "@/stores/auth";
 import { useToastStore } from "@/stores/toast";
 
 type AuthMode = "login" | "register";
@@ -29,11 +34,19 @@ const email = ref("");
 const password = ref("");
 const displayName = ref("");
 const username = ref("");
+const rememberMe = ref(false);
 const isSubmitting = ref(false);
 const fieldErrors = reactive<Partial<Record<FieldName, string>>>({});
 const touched = reactive<Partial<Record<FieldName, boolean>>>({});
 
 const googleUrl = computed(() => getGoogleOAuthUrl());
+
+const remembered = readRememberedCredentials();
+if (remembered) {
+  email.value = remembered.email;
+  password.value = remembered.password;
+  rememberMe.value = true;
+}
 
 watch(
   () => props.initialMode,
@@ -128,6 +141,11 @@ async function submit() {
         email: email.value.trim(),
         password: password.value,
       });
+      if (rememberMe.value) {
+        saveRememberedCredentials(email.value.trim(), password.value);
+      } else {
+        clearRememberedCredentials();
+      }
       if (authStore.user && shouldRedirectAuthenticatedRole(authStore.user.role, route.path)) {
         redirectByRole(authStore.user.role, authStore.accessToken);
         return;
@@ -140,6 +158,7 @@ async function submit() {
         display_name: displayName.value.trim() || undefined,
         username: username.value.trim() || undefined,
       });
+      clearRememberedCredentials();
       if (authStore.user && shouldRedirectAuthenticatedRole(authStore.user.role, route.path)) {
         redirectByRole(authStore.user.role, authStore.accessToken);
         return;
@@ -253,6 +272,11 @@ async function submit() {
             <span v-if="touched.password && fieldErrors.password" class="mt-2 block text-xs text-rose-300">
               {{ fieldErrors.password }}
             </span>
+          </label>
+
+          <label v-if="mode === 'login'" class="flex items-center gap-3 text-sm text-slate-300">
+            <input v-model="rememberMe" class="h-4 w-4 rounded border-white/20 bg-white/10" type="checkbox" />
+            <span>Ghi nhớ email & mật khẩu</span>
           </label>
 
           <button class="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60" type="submit" :disabled="isSubmitting">

@@ -1,12 +1,12 @@
 export function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('vi-VN', {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))
 }
 
 export function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('vi-VN', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

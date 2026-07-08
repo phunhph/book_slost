@@ -151,8 +151,16 @@ def test_update_booking_status_ownership(
         current_user=None,
     )
 
-    updated = update_booking_status(db_session, booking.id, "confirmed", kol_user_id=seed_users["kol"].id)
-    assert updated.status == "confirmed"
+    updated = update_booking_status(db_session, booking.id, "cancelled", kol_user_id=seed_users["kol"].id)
+    assert updated.status == "cancelled"
+
+    with pytest.raises(ValueError, match="duyệt thanh toán|bill"):
+        update_booking_status(db_session, booking.id, "confirmed", kol_user_id=seed_users["kol"].id)
+
+    booking.payment_status = "paid"
+    db_session.commit()
+    confirmed = update_booking_status(db_session, booking.id, "confirmed", kol_user_id=seed_users["kol"].id)
+    assert confirmed.status == "confirmed"
 
     with pytest.raises(ValueError, match="của mình"):
         update_booking_status(
@@ -164,20 +172,31 @@ def test_update_booking_status_ownership(
 
 
 def test_dashboard_stats_counts(db_session: Session, seed_users: dict[str, User], future_schedule: datetime) -> None:
-    create_booking(
+    booking = create_booking(
         db_session,
         BookingCreateRequest(
             kol_user_id=seed_users["kol"].id,
             scheduled_at=future_schedule,
             pricing_type="match",
-            quantity=1,
+            quantity=2,
             guest_name="Guest A",
             guest_phone="0909000001",
         ),
         current_user=None,
     )
+    booking.payment_status = "paid"
+    booking.status = "completed"
+    db_session.commit()
+
     stats = get_dashboard_stats(db_session)
     assert stats["total_kols"] == 2
     assert stats["total_customers"] == 1
     assert stats["total_bookings"] == 1
-    assert stats["pending_bookings"] == 1
+    assert stats["pending_bookings"] == 0
+    assert stats["completed_bookings"] == 1
+    assert stats["collected_revenue"] == 300000
+    assert stats["month_collected_revenue"] >= 0
+    assert stats["year_collected_revenue"] == 300000
+    assert len(stats["revenue_by_month"]["labels"]) == 12
+    assert len(stats["revenue_by_year"]["labels"]) == 5
+    assert stats["top_kols_by_revenue"][0]["revenue"] == 300000

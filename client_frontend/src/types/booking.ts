@@ -27,6 +27,10 @@ export interface BookingResponse {
   payment_qr_url: string | null;
   payment_code: string | null;
   payment_status: string;
+  payment_proof_url?: string | null;
+  payment_proof_note?: string | null;
+  payment_proof_uploaded_at?: string | null;
+  payment_reviewed_at?: string | null;
   status: string;
   notes: string | null;
   created_at: string;

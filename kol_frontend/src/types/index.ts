@@ -11,6 +11,7 @@ export interface User {
 export interface AuthResponse {
   access_token: string
   token_type: string
+  expires_in?: number
   message: string
   user: User
 }
@@ -38,6 +39,10 @@ export interface Booking {
   payment_qr_url?: string | null
   payment_code?: string | null
   payment_status?: string
+  payment_proof_url?: string | null
+  payment_proof_note?: string | null
+  payment_proof_uploaded_at?: string | null
+  payment_reviewed_at?: string | null
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
   notes: string | null
   created_at: string

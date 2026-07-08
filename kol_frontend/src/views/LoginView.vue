@@ -2,7 +2,12 @@
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { googleOAuthUrl } from '../services/api'
-import { useAuthStore } from '../stores/auth'
+import {
+  clearRememberedCredentials,
+  readRememberedCredentials,
+  saveRememberedCredentials,
+  useAuthStore,
+} from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 import { getErrorMessage } from '../utils/errors'
 
@@ -13,8 +18,10 @@ const toast = useToastStore()
 const route = useRoute()
 const router = useRouter()
 
-const email = ref('')
-const password = ref('')
+const remembered = readRememberedCredentials()
+const email = ref(remembered?.email || '')
+const password = ref(remembered?.password || '')
+const rememberMe = ref(Boolean(remembered))
 const fieldErrors = reactive<Partial<Record<FieldName, string>>>({})
 const touched = reactive<Partial<Record<FieldName, boolean>>>({})
 
@@ -64,6 +71,11 @@ async function submit() {
 
   try {
     await auth.login(email.value.trim(), password.value)
+    if (rememberMe.value) {
+      saveRememberedCredentials(email.value.trim(), password.value)
+    } else {
+      clearRememberedCredentials()
+    }
     await router.push(redirectTarget.value)
   } catch (error) {
     toast.error(getErrorMessage(error, 'Không thể đăng nhập.'))
@@ -134,6 +146,11 @@ async function submit() {
             />
             <p v-if="touched.password && fieldErrors.password" class="field-error">{{ fieldErrors.password }}</p>
           </div>
+
+          <label class="flex items-center gap-3 text-sm text-slate-300">
+            <input v-model="rememberMe" class="h-4 w-4 rounded border-white/20 bg-white/10" type="checkbox" />
+            <span>Ghi nhớ email & mật khẩu</span>
+          </label>
 
           <button class="btn-primary w-full" type="submit" :disabled="auth.loading">
             {{ auth.loading ? 'Đang đăng nhập...' : 'Đăng nhập bằng email' }}

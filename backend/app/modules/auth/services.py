@@ -25,9 +25,11 @@ def verify_password(plain_password: str, password_hash: str | None) -> bool:
 
 
 def build_auth_response(user: User, message: str) -> dict:
+    access_token, expires_in, _expires_at = create_access_token(user.id, user.role)
     return {
-        "access_token": create_access_token(user.id),
+        "access_token": access_token,
         "token_type": "bearer",
+        "expires_in": expires_in,
         "user": user,
         "message": message,
     }

@@ -20,6 +20,11 @@ class BookingStatusUpdateRequest(BaseModel):
     status: str = Field(pattern="^(pending|confirmed|completed|cancelled)$")
 
 
+class PaymentReviewRequest(BaseModel):
+    action: str = Field(pattern="^(approve|reject)$")
+    note: str | None = Field(default=None, max_length=500)
+
+
 class KolPublicCard(BaseModel):
     user_id: UUID
     username: str | None
@@ -53,6 +58,10 @@ class BookingResponse(BaseModel):
     payment_qr_url: str | None
     payment_code: str | None
     payment_status: str
+    payment_proof_url: str | None = None
+    payment_proof_note: str | None = None
+    payment_proof_uploaded_at: datetime | None = None
+    payment_reviewed_at: datetime | None = None
     status: str
     notes: str | None
     created_at: datetime

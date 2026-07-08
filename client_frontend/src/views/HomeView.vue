@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import KolCard from "@/components/kols/KolCard.vue";
 import { kolWorkspaceUrl } from "@/lib/appUrls";
@@ -15,9 +15,42 @@ const kols = ref<KolPublicCard[]>([]);
 const isLoading = ref(true);
 const loadFailed = ref(false);
 const loadError = ref("");
+const query = ref("");
+const page = ref(1);
+const pageSize = 9;
 
 const featuredKols = computed(() => kols.value.filter((item) => item.username));
 const isKolAccount = computed(() => authStore.user?.role === "kol");
+
+const filteredKols = computed(() => {
+  const q = query.value.trim().toLowerCase();
+  if (!q) return featuredKols.value;
+  return featuredKols.value.filter((item) => {
+    const haystack = [item.display_name, item.username, item.bio]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  });
+});
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredKols.value.length / pageSize)));
+const pagedKols = computed(() => {
+  const start = (page.value - 1) * pageSize;
+  return filteredKols.value.slice(start, start + pageSize);
+});
+const rangeStart = computed(() =>
+  filteredKols.value.length === 0 ? 0 : (page.value - 1) * pageSize + 1,
+);
+const rangeEnd = computed(() => Math.min(page.value * pageSize, filteredKols.value.length));
+
+watch(query, () => {
+  page.value = 1;
+});
+
+watch(filteredKols, () => {
+  if (page.value > totalPages.value) page.value = totalPages.value;
+});
 
 onMounted(async () => {
   try {
@@ -85,12 +118,20 @@ onMounted(async () => {
     </div>
 
     <section id="creators" class="mt-16">
-      <div class="flex items-end justify-between gap-4">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="text-sm uppercase tracking-[0.28em] text-sky-300">Creators</p>
           <h2 class="mt-3 text-3xl font-semibold text-white">KOL nổi bật</h2>
         </div>
-        <p class="hidden text-sm text-slate-400 sm:block">{{ featuredKols.length }} hồ sơ công khai</p>
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <p class="text-sm text-slate-400">{{ filteredKols.length }} / {{ featuredKols.length }} hồ sơ</p>
+          <input
+            v-model="query"
+            type="search"
+            placeholder="Tìm creator..."
+            class="h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-sky-400/40 sm:w-72"
+          />
+        </div>
       </div>
 
       <div v-if="isLoading" class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -101,13 +142,44 @@ onMounted(async () => {
         {{ loadError || "Không tải được danh sách creator. Vui lòng thử lại sau." }}
       </div>
 
-      <div v-else-if="!featuredKols.length" class="mt-8 rounded-[2rem] border border-white/10 bg-white/6 p-6 text-slate-200">
-        Chưa có creator công khai.
+      <div v-else-if="!filteredKols.length" class="mt-8 rounded-[2rem] border border-white/10 bg-white/6 p-6 text-slate-200">
+        {{ query.trim() ? "Không tìm thấy creator phù hợp." : "Chưa có creator công khai." }}
       </div>
 
-      <div v-else class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        <KolCard v-for="kol in featuredKols" :key="kol.user_id" :kol="kol" />
-      </div>
+      <template v-else>
+        <div class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <KolCard v-for="kol in pagedKols" :key="kol.user_id" :kol="kol" />
+        </div>
+
+        <div
+          class="mt-6 flex flex-col gap-3 rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p class="text-sm text-slate-400">
+            Hiển thị
+            <span class="font-semibold text-white">{{ rangeStart }}–{{ rangeEnd }}</span>
+            / {{ filteredKols.length }}
+          </p>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="h-9 rounded-lg border border-white/10 px-3 text-sm text-slate-200 disabled:opacity-40"
+              :disabled="page <= 1"
+              @click="page -= 1"
+            >
+              Trước
+            </button>
+            <span class="px-2 text-sm text-slate-300">{{ page }} / {{ totalPages }}</span>
+            <button
+              type="button"
+              class="h-9 rounded-lg border border-white/10 px-3 text-sm text-slate-200 disabled:opacity-40"
+              :disabled="page >= totalPages"
+              @click="page += 1"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      </template>
     </section>
   </section>
 </template>
