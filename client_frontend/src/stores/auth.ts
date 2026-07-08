@@ -16,7 +16,6 @@ interface StoredAuthState {
 
 interface StoredCredentials {
   email: string;
-  password: string;
 }
 
 function readStoredAuth(): StoredAuthState {
@@ -49,17 +48,21 @@ export function readRememberedCredentials(): StoredCredentials | null {
   const raw = window.localStorage.getItem(CREDENTIALS_KEY);
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as StoredCredentials;
-    if (!parsed.email || !parsed.password) return null;
-    return parsed;
+    const parsed = JSON.parse(raw) as StoredCredentials & { password?: string };
+    if (!parsed.email) return null;
+    // Never keep plaintext passwords in localStorage (CodeQL / security).
+    if (parsed.password) {
+      window.localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({ email: parsed.email }));
+    }
+    return { email: parsed.email };
   } catch {
     return null;
   }
 }
 
-export function saveRememberedCredentials(email: string, password: string) {
+export function saveRememberedCredentials(email: string) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({ email, password }));
+  window.localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({ email }));
 }
 
 export function clearRememberedCredentials() {

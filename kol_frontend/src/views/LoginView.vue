@@ -20,7 +20,7 @@ const router = useRouter()
 
 const remembered = readRememberedCredentials()
 const email = ref(remembered?.email || '')
-const password = ref(remembered?.password || '')
+const password = ref('')
 const rememberMe = ref(Boolean(remembered))
 const fieldErrors = reactive<Partial<Record<FieldName, string>>>({})
 const touched = reactive<Partial<Record<FieldName, boolean>>>({})
@@ -72,7 +72,7 @@ async function submit() {
   try {
     await auth.login(email.value.trim(), password.value)
     if (rememberMe.value) {
-      saveRememberedCredentials(email.value.trim(), password.value)
+      saveRememberedCredentials(email.value.trim())
     } else {
       clearRememberedCredentials()
     }
@@ -149,7 +149,7 @@ async function submit() {
 
           <label class="flex items-center gap-3 text-sm text-slate-300">
             <input v-model="rememberMe" class="h-4 w-4 rounded border-white/20 bg-white/10" type="checkbox" />
-            <span>Ghi nhớ email & mật khẩu</span>
+            <span>Ghi nhớ email</span>
           </label>
 
           <button class="btn-primary w-full" type="submit" :disabled="auth.loading">

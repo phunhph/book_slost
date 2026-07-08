@@ -29,7 +29,7 @@
         </div>
         <label class="flex items-center gap-2 text-sm text-slate-600">
           <input v-model="rememberMe" type="checkbox" class="h-4 w-4 rounded border-slate-300" />
-          Ghi nhớ email & mật khẩu
+          Ghi nhớ email
         </label>
         <p v-if="auth.error" class="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ auth.error }}</p>
         <button type="submit" class="btn-primary w-full" :disabled="auth.loading">
@@ -56,7 +56,7 @@ const auth = useAuthStore();
 const router = useRouter();
 const remembered = readRememberedCredentials();
 const email = ref(remembered?.email || "admin@example.com");
-const password = ref(remembered?.password || "Admin@123");
+const password = ref("");
 const rememberMe = ref(Boolean(remembered));
 const googleUrl = getGoogleOAuthUrl();
 
@@ -64,7 +64,7 @@ async function handleSubmit() {
   try {
     await auth.login(email.value, password.value);
     if (rememberMe.value) {
-      saveRememberedCredentials(email.value.trim(), password.value);
+      saveRememberedCredentials(email.value.trim());
     } else {
       clearRememberedCredentials();
     }

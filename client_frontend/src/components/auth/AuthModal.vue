@@ -44,7 +44,6 @@ const googleUrl = computed(() => getGoogleOAuthUrl());
 const remembered = readRememberedCredentials();
 if (remembered) {
   email.value = remembered.email;
-  password.value = remembered.password;
   rememberMe.value = true;
 }
 
@@ -142,7 +141,7 @@ async function submit() {
         password: password.value,
       });
       if (rememberMe.value) {
-        saveRememberedCredentials(email.value.trim(), password.value);
+        saveRememberedCredentials(email.value.trim());
       } else {
         clearRememberedCredentials();
       }
@@ -276,7 +275,7 @@ async function submit() {
 
           <label v-if="mode === 'login'" class="flex items-center gap-3 text-sm text-slate-300">
             <input v-model="rememberMe" class="h-4 w-4 rounded border-white/20 bg-white/10" type="checkbox" />
-            <span>Ghi nhớ email & mật khẩu</span>
+            <span>Ghi nhớ email</span>
           </label>
 
           <button class="w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60" type="submit" :disabled="isSubmitting">
