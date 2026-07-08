@@ -9,7 +9,7 @@ defineProps<{
 
 <template>
   <section class="profile-section">
-    <p class="profile-section__label">Gallery</p>
+    <p class="profile-section__label">Thư viện ảnh</p>
     <div
       class="profile-gallery"
       :class="layout === 'carousel' ? 'profile-gallery--carousel' : 'profile-gallery--grid'"
@@ -19,7 +19,7 @@ defineProps<{
         :key="`${item.url}-${index}`"
         class="profile-gallery__item"
       >
-        <img :src="item.url" :alt="item.alt ?? 'Gallery image'" class="profile-gallery__image" />
+        <img :src="item.url" :alt="item.alt ?? 'Ảnh thư viện'" class="profile-gallery__image" />
         <figcaption v-if="item.caption" class="profile-gallery__caption">{{ item.caption }}</figcaption>
       </figure>
     </div>

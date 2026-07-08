@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +23,14 @@ class Booking(Base):
     guest_zalo: Mapped[str | None] = mapped_column(String(100), nullable=True)
     guest_messenger: Mapped[str | None] = mapped_column(String(100), nullable=True)
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    pricing_type: Mapped[str] = mapped_column(String(30), default="match", nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    unit_price: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_amount: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), default="VND", nullable=False)
+    payment_qr_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payment_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    payment_status: Mapped[str] = mapped_column(String(30), default="unpaid", nullable=False)
     status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

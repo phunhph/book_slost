@@ -12,7 +12,7 @@ const isPlainText = computed(() => !isRichHtml(props.content))
 
 <template>
   <section class="profile-section">
-    <p class="profile-section__label">About</p>
+    <p class="profile-section__label">Giới thiệu</p>
     <div
       v-if="isPlainText"
       class="profile-section__body profile-rich-text whitespace-pre-wrap"

@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
   <section class="profile-section">
-    <p class="profile-section__label">QR codes</p>
+    <p class="profile-section__label">Mã QR</p>
     <div class="grid gap-3 grid-cols-2">
       <a
         v-for="(item, index) in items"

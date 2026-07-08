@@ -12,30 +12,31 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { fetchMe } from "@/api/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
-const message = ref("Dang xu ly dang nhap Google...");
+const message = ref("Đang xử lý đăng nhập Google...");
 
 onMounted(async () => {
   const error = route.query.error as string | undefined;
   const accessToken = route.query.access_token as string | undefined;
 
   if (error) {
-    message.value = error;
+    message.value = getErrorMessage(error, "Đăng nhập Google thất bại.");
     return;
   }
   if (!accessToken) {
-    message.value = "Khong nhan duoc token.";
+    message.value = "Không nhận được token từ Google.";
     return;
   }
 
   try {
     const user = await fetchMe(accessToken);
     if (user.role !== "admin") {
-      message.value = "Tai khoan khong co quyen admin.";
+      message.value = "Tài khoản không có quyền admin.";
       return;
     }
     auth.token = accessToken;
@@ -43,7 +44,7 @@ onMounted(async () => {
     localStorage.setItem("abc_access_token", accessToken);
     router.replace("/dashboard");
   } catch (err) {
-    message.value = err instanceof Error ? err.message : "Dang nhap Google that bai.";
+    message.value = getErrorMessage(err, "Đăng nhập Google thất bại.");
   }
 });
 </script>

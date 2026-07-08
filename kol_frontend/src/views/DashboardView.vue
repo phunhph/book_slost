@@ -27,19 +27,19 @@ onMounted(async () => {
   <div class="space-y-6">
     <section class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
       <StatCard
-        label="Total bookings"
+        label="Tổng booking"
         :value="stats?.total_bookings ?? '--'"
-        caption="Everything assigned to your creator account"
+        caption="Mọi yêu cầu gắn với tài khoản creator của bạn"
       />
       <StatCard
-        label="Pending approvals"
+        label="Chờ duyệt"
         :value="stats?.pending_bookings ?? '--'"
-        caption="Campaign requests still waiting on action"
+        caption="Yêu cầu chiến dịch vẫn đang chờ xử lý"
       />
       <StatCard
-        label="Upcoming sessions"
+        label="Sắp diễn ra"
         :value="stats?.upcoming_bookings ?? '--'"
-        caption="Confirmed or pending future schedules"
+        caption="Lịch đã xác nhận hoặc đang chờ trong tương lai"
       />
     </section>
 
@@ -48,21 +48,21 @@ onMounted(async () => {
         to="/profile"
         class="glass-panel page-panel rounded-[2rem] transition hover:-translate-y-0.5 hover:border-fuchsia-400/30"
       >
-        <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300/80">Personal management</p>
-        <h3 class="mt-3 text-2xl font-semibold text-white">Customize your public profile</h3>
+        <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300/80">Quản lý cá nhân</p>
+        <h3 class="mt-3 text-2xl font-semibold text-white">Tùy chỉnh hồ sơ công khai</h3>
         <p class="mt-3 text-sm leading-6 text-slate-300">
-          Update display name, bio, avatar, colors, contact info, and layout blocks that appear on your public page.
+          Cập nhật tên hiển thị, bio, avatar, màu sắc, liên hệ và các block layout trên trang công khai của bạn.
         </p>
         <div class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-fuchsia-200">
-          Open profile manager <span aria-hidden="true">-></span>
+          Mở trình quản lý hồ sơ <span aria-hidden="true">-></span>
         </div>
       </RouterLink>
 
       <div class="glass-panel page-panel rounded-[2rem]">
-        <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Workspace reminder</p>
-        <h3 class="mt-3 text-2xl font-semibold text-white">This is your creator control room</h3>
+        <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Nhắc nhở workspace</p>
+        <h3 class="mt-3 text-2xl font-semibold text-white">Đây là trung tâm điều khiển creator</h3>
         <p class="mt-3 text-sm leading-6 text-slate-300">
-          Use <span class="font-semibold text-white">Customize Profile</span> to manage your personal brand, then handle bookings, calendar, history, and reports from the sidebar.
+          Dùng <span class="font-semibold text-white">Tùy chỉnh hồ sơ</span> để quản lý thương hiệu, rồi xử lý đặt lịch, lịch, lịch sử và báo cáo từ thanh bên.
         </p>
       </div>
     </section>
@@ -71,15 +71,15 @@ onMounted(async () => {
       <div class="glass-panel page-panel rounded-[2rem]">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300/80">Overview</p>
-            <h3 class="mt-2 text-2xl font-semibold text-white">Latest booking queue</h3>
+            <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300/80">Tổng quan</p>
+            <h3 class="mt-2 text-2xl font-semibold text-white">Hàng đợi booking mới nhất</h3>
           </div>
         </div>
 
-        <div v-if="loading" class="mt-6 text-sm text-slate-400">Loading dashboard...</div>
+        <div v-if="loading" class="mt-6 text-sm text-slate-400">Đang tải bảng điều khiển...</div>
 
         <div v-else-if="!nextBookings.length" class="mt-6 rounded-3xl border border-dashed border-white/10 p-6 text-sm text-slate-400">
-          No bookings yet. New creator requests will appear here.
+          Chưa có booking. Yêu cầu creator mới sẽ hiện ở đây.
         </div>
 
         <div v-else class="mt-6 space-y-3">
@@ -90,7 +90,7 @@ onMounted(async () => {
           >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="min-w-0">
-                <p class="truncate font-medium text-white">{{ booking.guest_name || booking.customer_email || 'Guest booking' }}</p>
+                <p class="truncate font-medium text-white">{{ booking.guest_name || booking.customer_email || 'Khách đặt lịch' }}</p>
                 <p class="mt-1 text-sm text-slate-400">{{ formatDateTime(booking.scheduled_at) }}</p>
               </div>
               <span class="w-fit rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-3 py-1 text-xs uppercase tracking-[0.25em] text-fuchsia-200">
@@ -103,22 +103,21 @@ onMounted(async () => {
       </div>
 
       <div class="glass-panel page-panel rounded-[2rem]">
-        <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Flow</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white">Workspace pulse</h3>
+        <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Luồng việc</p>
+        <h3 class="mt-2 text-2xl font-semibold text-white">Nhịp workspace</h3>
         <div class="mt-6 space-y-4">
           <div class="rounded-3xl border border-white/8 bg-white/4 p-4">
-            <p class="text-sm text-slate-300">Pending response window</p>
+            <p class="text-sm text-slate-300">Chờ phản hồi</p>
             <p class="mt-2 text-3xl font-semibold text-white">{{ stats?.pending_bookings ?? 0 }}</p>
           </div>
           <div class="rounded-3xl border border-white/8 bg-white/4 p-4">
-            <p class="text-sm text-slate-300">Booked calendar momentum</p>
+            <p class="text-sm text-slate-300">Đà lịch đã book</p>
             <p class="mt-2 text-3xl font-semibold text-white">{{ stats?.upcoming_bookings ?? 0 }}</p>
           </div>
           <div class="rounded-3xl border border-white/8 bg-gradient-to-br from-violet-500/18 to-fuchsia-500/16 p-4">
-            <p class="text-sm text-slate-200">Creator note</p>
+            <p class="text-sm text-slate-200">Ghi chú creator</p>
             <p class="mt-2 text-sm leading-6 text-slate-100">
-              Keep your profile polished and confirm requests quickly to maintain a premium brand
-              experience.
+              Giữ hồ sơ chỉn chu và xác nhận yêu cầu nhanh để duy trì trải nghiệm thương hiệu cao cấp.
             </p>
           </div>
         </div>

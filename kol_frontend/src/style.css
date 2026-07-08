@@ -112,6 +112,18 @@ select.field {
   box-shadow: 0 0 0 4px rgba(217, 70, 239, 0.16);
 }
 
+.field--error {
+  border-color: rgba(251, 113, 133, 0.75) !important;
+  box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.14);
+}
+
+.field-error {
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #fda4af;
+}
+
 .btn-primary {
   border: none;
   border-radius: 1rem;

@@ -9,6 +9,7 @@ ALLOWED_THEME_MODES = {"light", "dark", "custom"}
 ALLOWED_BG_TYPES = {"color", "gradient", "image"}
 ALLOWED_AVATAR_STYLES = {"circle", "square", "rounded"}
 ALLOWED_BUTTON_STYLES = {"filled", "outline", "shadow"}
+ALLOWED_PRICING_TYPES = {"match", "hourly"}
 
 
 class UserProfileUpdateRequest(BaseModel):
@@ -27,6 +28,14 @@ class UserProfileUpdateRequest(BaseModel):
     phone: str | None = Field(default=None, max_length=30)
     zalo: str | None = Field(default=None, max_length=100)
     messenger: str | None = Field(default=None, max_length=100)
+    pricing_type: str | None = None
+    price_per_match: int | None = Field(default=None, ge=0)
+    price_per_hour: int | None = Field(default=None, ge=0)
+    currency: str | None = Field(default=None, max_length=10)
+    bank_name: str | None = Field(default=None, max_length=100)
+    bank_code: str | None = Field(default=None, max_length=20)
+    bank_account_number: str | None = Field(default=None, max_length=50)
+    bank_account_name: str | None = Field(default=None, max_length=150)
     layout_structure: dict[str, Any] | None = None
 
     @field_validator("theme_mode")
@@ -57,6 +66,13 @@ class UserProfileUpdateRequest(BaseModel):
             raise ValueError("button_style must be one of: filled, outline, shadow")
         return value
 
+    @field_validator("pricing_type")
+    @classmethod
+    def validate_pricing_type(cls, value: str | None) -> str | None:
+        if value is not None and value not in ALLOWED_PRICING_TYPES:
+            raise ValueError("pricing_type phải là match hoặc hourly")
+        return value
+
 
 class UserProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -77,6 +93,14 @@ class UserProfileResponse(BaseModel):
     phone: str | None
     zalo: str | None
     messenger: str | None
+    pricing_type: str
+    price_per_match: int
+    price_per_hour: int
+    currency: str
+    bank_name: str | None = None
+    bank_code: str | None = None
+    bank_account_number: str | None = None
+    bank_account_name: str | None = None
     layout_structure: dict[str, Any]
     created_at: datetime
     updated_at: datetime

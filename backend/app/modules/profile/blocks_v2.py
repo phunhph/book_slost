@@ -57,7 +57,7 @@ def _default_data(block_type: BlockType) -> dict[str, Any]:
     if block_type == "contact":
         return {"phone": None, "zalo": None, "messenger": None}
     if block_type == "booking":
-        return {"title": "Request a campaign", "subtitle": "Share your campaign goals and preferred schedule."}
+        return {"title": "Dat lich choi cung", "subtitle": "Chon goi theo tran hoac theo gio, sau do nhan ma QR thanh toan."}
     return {}
 
 

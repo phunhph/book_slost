@@ -7,6 +7,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class BookingCreateRequest(BaseModel):
     kol_user_id: UUID
     scheduled_at: datetime
+    pricing_type: str = Field(default="match", pattern="^(match|hourly)$")
+    quantity: int = Field(default=1, ge=1, le=100)
     notes: str | None = Field(default=None, max_length=2000)
     guest_name: str | None = Field(default=None, max_length=150)
     guest_phone: str | None = Field(default=None, max_length=30)
@@ -16,6 +18,20 @@ class BookingCreateRequest(BaseModel):
 
 class BookingStatusUpdateRequest(BaseModel):
     status: str = Field(pattern="^(pending|confirmed|completed|cancelled)$")
+
+
+class KolPublicCard(BaseModel):
+    user_id: UUID
+    username: str | None
+    display_name: str | None
+    bio: str | None
+    avatar_url: str | None
+    primary_color: str | None = None
+    pricing_type: str | None = None
+    price_per_match: int | None = None
+    price_per_hour: int | None = None
+    currency: str | None = None
+    has_bank_account: bool = False
 
 
 class BookingResponse(BaseModel):
@@ -29,6 +45,14 @@ class BookingResponse(BaseModel):
     guest_zalo: str | None
     guest_messenger: str | None
     scheduled_at: datetime
+    pricing_type: str
+    quantity: int
+    unit_price: int
+    total_amount: int
+    currency: str
+    payment_qr_url: str | None
+    payment_code: str | None
+    payment_status: str
     status: str
     notes: str | None
     created_at: datetime
@@ -36,12 +60,6 @@ class BookingResponse(BaseModel):
     kol_display_name: str | None = None
     kol_username: str | None = None
     customer_email: str | None = None
-
-
-class KolPublicCard(BaseModel):
-    user_id: UUID
-    username: str | None
-    display_name: str | None
-    bio: str | None
-    avatar_url: str | None
-    primary_color: str | None = None
+    bank_name: str | None = None
+    bank_account_number: str | None = None
+    bank_account_name: str | None = None

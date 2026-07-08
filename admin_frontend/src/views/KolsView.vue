@@ -1,7 +1,7 @@
 <template>
-  <DataTable title="Danh sach KOL" search-placeholder="Tim KOL..." :columns="columns" :rows="rows" :search-keys="['email', 'username', 'display_name']">
+  <DataTable title="Danh sách KOL" search-placeholder="Tìm KOL..." :columns="columns" :rows="rows" :search-keys="['email', 'username', 'display_name']">
     <template #cell-is_active="{ row }">
-      <span class="badge" :class="row.is_active ? 'badge-success' : 'badge-muted'">{{ row.is_active ? "Active" : "Inactive" }}</span>
+      <span class="badge" :class="row.is_active ? 'badge-success' : 'badge-muted'">{{ row.is_active ? "Đang hoạt động" : "Ngưng" }}</span>
     </template>
   </DataTable>
 </template>
@@ -17,11 +17,11 @@ import type { KolRow } from "@/types";
 const auth = useAuthStore();
 const rows = ref<KolRow[]>([]);
 const columns = [
-  { key: "display_name", label: "Ten hien thi" },
+  { key: "display_name", label: "Tên hiển thị" },
   { key: "username", label: "Username" },
   { key: "email", label: "Email" },
-  { key: "is_active", label: "Trang thai" },
-  { key: "created_at", label: "Ngay tao" }
+  { key: "is_active", label: "Trạng thái" },
+  { key: "created_at", label: "Ngày tạo" }
 ];
 
 onMounted(async () => {

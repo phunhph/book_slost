@@ -56,7 +56,7 @@ const hasQuickContact = computed(
         <img
           v-if="profile.avatar_url"
           :src="profile.avatar_url"
-          :alt="profile.display_name ?? 'Creator avatar'"
+          :alt="profile.display_name ?? 'Avatar creator'"
           class="h-full w-full object-cover"
         />
         <div v-else class="flex h-full w-full items-center justify-center text-3xl font-semibold opacity-80">
@@ -65,14 +65,14 @@ const hasQuickContact = computed(
       </div>
 
       <div class="min-w-0 flex-1 text-center sm:text-left">
-        <p class="profile-public-eyebrow">Creator profile</p>
-        <h1 class="profile-public-title">{{ profile.display_name ?? profile.username ?? 'Unnamed creator' }}</h1>
+        <p class="profile-public-eyebrow">Hồ sơ creator</p>
+        <h1 class="profile-public-title">{{ profile.display_name ?? profile.username ?? 'Creator chưa đặt tên' }}</h1>
         <p class="profile-public-handle">@{{ profile.username ?? 'creator' }}</p>
         <p v-if="showBio && profile.bio" class="profile-public-bio">{{ profile.bio }}</p>
 
         <div v-if="hasQuickContact" class="profile-public-contacts justify-center sm:justify-start">
           <a v-if="profile.phone" class="profile-public-chip profile-public-chip--accent" :href="`tel:${profile.phone}`">
-            <span class="profile-public-chip-label">Phone</span>
+            <span class="profile-public-chip-label">Điện thoại</span>
             {{ profile.phone }}
           </a>
           <span v-if="profile.zalo" class="profile-public-chip">
@@ -92,13 +92,13 @@ const hasQuickContact = computed(
             type="button"
             @click="emit('openAuth')"
           >
-            Login / Register
+            Đăng nhập / Đăng ký
           </button>
           <a
             href="#booking-section"
             class="profile-public-ghost rounded-full border px-5 py-2.5 text-sm font-medium transition hover:bg-black/5"
           >
-            Book now
+            Đặt lịch ngay
           </a>
         </div>
       </div>

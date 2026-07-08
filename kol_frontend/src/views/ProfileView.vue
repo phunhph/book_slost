@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import axios from 'axios'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { publicProfileUrl as buildPublicProfileUrl } from '../lib/appUrls'
+import { VN_BANKS, bankNameFromCode } from '../lib/banks'
 import { resolveThemeForBackground } from '../lib/colorUtils'
 import { defaultLayoutV2, migrateLayoutToV2, normalizeLayoutV2, parseLayout } from '../lib/profileBlocks'
 import { buildDemoLayoutV2, DEMO_AVATAR_URL, DEMO_PROFILE_COPY, DEMO_THEME } from '../lib/profileDemoContent'
 import { getProfileByUser, updateProfileByUser } from '../services/api'
+import { getErrorMessage } from '../utils/errors'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 import BackgroundField from '../components/ui/BackgroundField.vue'
@@ -20,12 +21,14 @@ const toast = useToastStore()
 const loading = ref(true)
 const saving = ref(false)
 const activeTab = ref<'identity' | 'theme' | 'blocks' | 'preview'>('identity')
+const fieldErrors = reactive<Record<string, string>>({})
+const touched = reactive<Record<string, boolean>>({})
 
 const tabs = [
   { id: 'identity' as const, label: 'Thông tin', hint: 'Tên, avatar, liên hệ' },
   { id: 'theme' as const, label: 'Giao diện', hint: 'Màu sắc, nền, font' },
-  { id: 'blocks' as const, label: 'Nội dung trang', hint: 'Blocks & landing page' },
-  { id: 'preview' as const, label: 'Xem trước', hint: 'Public page' },
+  { id: 'blocks' as const, label: 'Nội dung trang', hint: 'Block & trang landing' },
+  { id: 'preview' as const, label: 'Xem trước', hint: 'Trang công khai' },
 ]
 
 const form = reactive<ProfileUpdatePayload>({
@@ -44,31 +47,44 @@ const form = reactive<ProfileUpdatePayload>({
   phone: null,
   zalo: null,
   messenger: null,
+  pricing_type: 'match',
+  price_per_match: 150000,
+  price_per_hour: 100000,
+  currency: 'VND',
+  bank_name: null,
+  bank_code: '',
+  bank_account_number: null,
+  bank_account_name: null,
   layout_structure: defaultLayoutV2(),
 })
 
 const themeModeOptions = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'custom', label: 'Custom' },
+  { value: 'light', label: 'Sáng' },
+  { value: 'dark', label: 'Tối' },
+  { value: 'custom', label: 'Tùy chỉnh' },
 ]
 
 const bgTypeOptions = [
-  { value: 'color', label: 'Solid color' },
+  { value: 'color', label: 'Màu đặc' },
   { value: 'gradient', label: 'Gradient' },
-  { value: 'image', label: 'Image URL' },
+  { value: 'image', label: 'URL ảnh' },
 ]
 
 const avatarStyleOptions = [
-  { value: 'circle', label: 'Circle' },
-  { value: 'square', label: 'Square' },
-  { value: 'rounded', label: 'Rounded' },
+  { value: 'circle', label: 'Tròn' },
+  { value: 'square', label: 'Vuông' },
+  { value: 'rounded', label: 'Bo góc' },
 ]
 
 const buttonStyleOptions = [
-  { value: 'filled', label: 'Filled' },
-  { value: 'outline', label: 'Outline' },
-  { value: 'shadow', label: 'Shadow' },
+  { value: 'filled', label: 'Đổ đầy' },
+  { value: 'outline', label: 'Viền' },
+  { value: 'shadow', label: 'Đổ bóng' },
+]
+
+const pricingTypeOptions = [
+  { value: 'match', label: 'Theo trận' },
+  { value: 'hourly', label: 'Theo giờ' },
 ]
 
 const fontFamilyOptions = [
@@ -85,6 +101,10 @@ const publicProfileLink = computed(() => {
   if (!form.username) return null
   return buildPublicProfileUrl(form.username)
 })
+
+const hasBankConfigured = computed(() =>
+  Boolean(form.bank_code?.trim() && form.bank_account_number?.trim() && form.bank_account_name?.trim()),
+)
 
 const layoutModel = computed({
   get: () =>
@@ -117,11 +137,113 @@ const previewProfile = computed((): UserProfile =>
     phone: form.phone ?? null,
     zalo: form.zalo ?? null,
     messenger: form.messenger ?? null,
+    pricing_type: form.pricing_type ?? 'match',
+    price_per_match: form.price_per_match ?? 0,
+    price_per_hour: form.price_per_hour ?? 0,
+    currency: form.currency ?? 'VND',
+    bank_name: form.bank_name ?? null,
+    bank_code: form.bank_code ?? null,
+    bank_account_number: form.bank_account_number ?? null,
+    bank_account_name: form.bank_account_name ?? null,
     layout_structure: layoutModel.value,
     created_at: '',
     updated_at: '',
   }),
 )
+
+function clearFieldError(field: string) {
+  delete fieldErrors[field]
+}
+
+function markTouched(field: string) {
+  touched[field] = true
+  validateField(field)
+}
+
+function validateField(field: string): string {
+  let message = ''
+  const username = (form.username || '').trim()
+  const phone = (form.phone || '').trim()
+  const bankCode = (form.bank_code || '').trim()
+  const bankAccountNumber = (form.bank_account_number || '').replace(/\s+/g, '')
+  const bankAccountName = (form.bank_account_name || '').trim()
+  const anyBankValue = Boolean(bankCode || bankAccountNumber || bankAccountName || (form.bank_name || '').trim())
+
+  if (field === 'username') {
+    if (!username) message = 'Vui lòng nhập username công khai.'
+    else if (username.length < 3) message = 'Username tối thiểu 3 ký tự.'
+    else if (!/^[a-zA-Z0-9._-]+$/.test(username)) message = 'Username chỉ gồm chữ, số, dấu chấm, gạch dưới, gạch ngang.'
+  }
+
+  if (field === 'display_name' && !(form.display_name || '').trim()) {
+    message = 'Vui lòng nhập tên hiển thị.'
+  }
+
+  if (field === 'phone' && phone && !/^(0|\+84)\d{8,10}$/.test(phone.replace(/[\s.-]/g, ''))) {
+    message = 'Số điện thoại không hợp lệ (ví dụ 0901234567).'
+  }
+
+  if (field === 'price_per_match') {
+    if ((form.price_per_match ?? 0) < 0) message = 'Giá theo trận không được âm.'
+  }
+
+  if (field === 'price_per_hour') {
+    if ((form.price_per_hour ?? 0) < 0) message = 'Giá theo giờ không được âm.'
+  }
+
+  if (field === 'bank_code' && anyBankValue && !bankCode) {
+    message = 'Chọn ngân hàng để tạo mã QR VietQR.'
+  }
+
+  if (field === 'bank_account_number') {
+    if (anyBankValue && !bankAccountNumber) message = 'Vui lòng nhập số tài khoản.'
+    else if (bankAccountNumber && !/^\d{6,20}$/.test(bankAccountNumber)) {
+      message = 'Số tài khoản phải gồm 6–20 chữ số.'
+    }
+  }
+
+  if (field === 'bank_account_name') {
+    if (anyBankValue && !bankAccountName) message = 'Vui lòng nhập tên chủ tài khoản.'
+    else if (bankAccountName && bankAccountName.length < 3) message = 'Tên chủ tài khoản quá ngắn.'
+  }
+
+  if (message) fieldErrors[field] = message
+  else clearFieldError(field)
+  return message
+}
+
+function validateProfileForm(): boolean {
+  const fields = [
+    'username',
+    'display_name',
+    'phone',
+    'price_per_match',
+    'price_per_hour',
+    'bank_code',
+    'bank_account_number',
+    'bank_account_name',
+  ]
+  let ok = true
+  for (const field of fields) {
+    touched[field] = true
+    if (validateField(field)) ok = false
+  }
+
+  if ((form.price_per_match ?? 0) <= 0 && (form.price_per_hour ?? 0) <= 0) {
+    fieldErrors.price_per_match = 'Cần ít nhất một mức giá > 0 (theo trận hoặc theo giờ).'
+    fieldErrors.price_per_hour = 'Cần ít nhất một mức giá > 0 (theo trận hoặc theo giờ).'
+    ok = false
+  }
+
+  return ok
+}
+
+function fieldClass(field: string) {
+  return [
+    'field',
+    touched[field] && fieldErrors[field] ? 'field--error' : '',
+  ]
+}
 
 function applyProfile(profile: UserProfile) {
   form.username = profile.username
@@ -139,6 +261,14 @@ function applyProfile(profile: UserProfile) {
   form.phone = profile.phone
   form.zalo = profile.zalo
   form.messenger = profile.messenger
+  form.pricing_type = profile.pricing_type || 'match'
+  form.price_per_match = profile.price_per_match ?? 0
+  form.price_per_hour = profile.price_per_hour ?? 0
+  form.currency = profile.currency || 'VND'
+  form.bank_name = profile.bank_name
+  form.bank_code = profile.bank_code || ''
+  form.bank_account_number = profile.bank_account_number
+  form.bank_account_name = profile.bank_account_name
   form.layout_structure = parseLayout(profile)
 }
 
@@ -149,6 +279,14 @@ function buildSavePayload(): ProfileUpdatePayload {
 
   const payload: ProfileUpdatePayload = {
     layout_structure: normalizeLayoutV2(layoutModel.value),
+    pricing_type: form.pricing_type ?? 'match',
+    price_per_match: form.price_per_match ?? 0,
+    price_per_hour: form.price_per_hour ?? 0,
+    currency: form.currency || 'VND',
+    bank_code: (form.bank_code || '').trim() || null,
+    bank_name: bankNameFromCode(form.bank_code) || (form.bank_name || '').trim() || null,
+    bank_account_number: (form.bank_account_number || '').replace(/\s+/g, '') || null,
+    bank_account_name: (form.bank_account_name || '').trim().toUpperCase() || null,
   }
 
   const scalarFields = [
@@ -211,7 +349,7 @@ function fillDemoContent() {
   form.bg_type = DEMO_THEME.bg_type
   form.bg_value = DEMO_THEME.bg_value
   form.layout_structure = buildDemoLayoutV2()
-  toast.info('Đã điền nội dung mẫu. Nhấn Save profile để lưu.')
+  toast.info('Đã điền nội dung mẫu. Nhấn Lưu profile để lưu.')
 }
 
 async function loadProfile() {
@@ -222,7 +360,7 @@ async function loadProfile() {
     const profile = await getProfileByUser(auth.user.id)
     applyProfile(profile)
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : 'Unable to load profile.')
+    toast.error(getErrorMessage(error, 'Không tải được hồ sơ.'))
   } finally {
     loading.value = false
   }
@@ -230,19 +368,25 @@ async function loadProfile() {
 
 async function saveProfile() {
   if (!auth.user) return
+
+  if (!validateProfileForm()) {
+    activeTab.value = 'identity'
+    toast.error('Vui lòng sửa các ô đang báo lỗi trước khi lưu.')
+    return
+  }
+
   saving.value = true
 
   try {
     const profile = await updateProfileByUser(auth.user.id, buildSavePayload())
     applyProfile(profile)
-    toast.success('Profile updated successfully.')
+    toast.success(
+      hasBankConfigured.value
+        ? 'Cập nhật hồ sơ thành công. Đã sẵn sàng tạo mã QR thanh toán.'
+        : 'Cập nhật hồ sơ thành công. Hãy thêm tài khoản ngân hàng để tạo mã QR.',
+    )
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.data?.detail) {
-      const detail = error.response.data.detail
-      toast.error(typeof detail === 'string' ? detail : JSON.stringify(detail))
-    } else {
-      toast.error(error instanceof Error ? error.message : 'Unable to save profile.')
-    }
+    toast.error(getErrorMessage(error, 'Không lưu được hồ sơ.'))
   } finally {
     saving.value = false
   }
@@ -255,10 +399,10 @@ onMounted(loadProfile)
   <div class="profile-workspace mx-auto max-w-5xl space-y-5">
     <header class="glass-panel page-panel flex flex-wrap items-start justify-between gap-4 rounded-[2rem]">
       <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Profile studio</p>
+        <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Studio hồ sơ</p>
         <h2 class="mt-2 text-2xl font-semibold text-white">Tùy chỉnh trang công khai</h2>
         <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-          Chỉnh thông tin, giao diện và nội dung trang public của bạn.
+          Chỉnh thông tin, giao diện và nội dung trang công khai của bạn.
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
@@ -269,7 +413,7 @@ onMounted(loadProfile)
           rel="noreferrer"
           class="btn-secondary text-sm"
         >
-          Mở trang public
+          Mở trang công khai
         </a>
         <button class="btn-secondary text-sm" type="button" @click="activeTab = 'preview'">
           Xem trước
@@ -280,7 +424,7 @@ onMounted(loadProfile)
       </div>
     </header>
 
-    <nav class="profile-workspace-tabs" aria-label="Profile sections">
+    <nav class="profile-workspace-tabs" aria-label="Các phần hồ sơ">
       <button
         v-for="tab in tabs"
         :key="tab.id"
@@ -294,31 +438,55 @@ onMounted(loadProfile)
       </button>
     </nav>
 
-    <div v-if="loading" class="glass-panel page-panel rounded-[2rem] p-6 text-sm text-slate-400">Đang tải profile...</div>
+    <div v-if="loading" class="glass-panel page-panel rounded-[2rem] p-6 text-sm text-slate-400">Đang tải hồ sơ...</div>
 
     <form v-else class="space-y-5" @submit.prevent="saveProfile">
       <section v-show="activeTab === 'identity'" class="glass-panel page-panel rounded-[2rem]">
         <p class="profile-form-section__title">Thông tin cơ bản</p>
         <div class="mt-4 grid gap-4 md:grid-cols-2">
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Display name</label>
-            <input v-model="form.display_name" class="field" type="text" placeholder="Tên hiển thị" />
+            <label class="mb-2 block text-sm text-slate-300">Tên hiển thị *</label>
+            <input
+              v-model="form.display_name"
+              :class="fieldClass('display_name')"
+              type="text"
+              placeholder="Tên hiển thị"
+              @blur="markTouched('display_name')"
+              @input="validateField('display_name')"
+            />
+            <p v-if="touched.display_name && fieldErrors.display_name" class="field-error">{{ fieldErrors.display_name }}</p>
           </div>
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Username</label>
-            <input v-model="form.username" class="field" type="text" placeholder="creator-demo" />
+            <label class="mb-2 block text-sm text-slate-300">Username *</label>
+            <input
+              v-model="form.username"
+              :class="fieldClass('username')"
+              type="text"
+              placeholder="creator-demo"
+              @blur="markTouched('username')"
+              @input="validateField('username')"
+            />
+            <p v-if="touched.username && fieldErrors.username" class="field-error">{{ fieldErrors.username }}</p>
           </div>
           <div class="md:col-span-2">
             <label class="mb-2 block text-sm text-slate-300">Bio ngắn (hero)</label>
             <textarea v-model="form.bio" class="field min-h-28" placeholder="Giới thiệu ngắn về bạn..." />
           </div>
           <div class="md:col-span-2">
-            <label class="mb-2 block text-sm text-slate-300">Avatar URL</label>
+            <label class="mb-2 block text-sm text-slate-300">URL avatar</label>
             <input v-model="form.avatar_url" class="field min-w-0" type="url" placeholder="https://..." />
           </div>
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Phone</label>
-            <input v-model="form.phone" class="field" type="text" placeholder="0901000001" />
+            <label class="mb-2 block text-sm text-slate-300">Điện thoại</label>
+            <input
+              v-model="form.phone"
+              :class="fieldClass('phone')"
+              type="text"
+              placeholder="0901000001"
+              @blur="markTouched('phone')"
+              @input="validateField('phone')"
+            />
+            <p v-if="touched.phone && fieldErrors.phone" class="field-error">{{ fieldErrors.phone }}</p>
           </div>
           <div>
             <label class="mb-2 block text-sm text-slate-300">Zalo</label>
@@ -328,6 +496,109 @@ onMounted(loadProfile)
             <label class="mb-2 block text-sm text-slate-300">Messenger</label>
             <input v-model="form.messenger" class="field" type="text" placeholder="Facebook / Messenger" />
           </div>
+          <div>
+            <label class="mb-2 block text-sm text-slate-300">Kiểu giá mặc định</label>
+            <select v-model="form.pricing_type" class="field">
+              <option v-for="option in pricingTypeOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-2 block text-sm text-slate-300">Đơn vị tiền</label>
+            <input v-model="form.currency" class="field" type="text" placeholder="VND" />
+          </div>
+          <div>
+            <label class="mb-2 block text-sm text-slate-300">Giá theo trận (VND) *</label>
+            <input
+              v-model.number="form.price_per_match"
+              :class="fieldClass('price_per_match')"
+              min="0"
+              type="number"
+              placeholder="150000"
+              @blur="markTouched('price_per_match')"
+              @input="validateField('price_per_match')"
+            />
+            <p v-if="touched.price_per_match && fieldErrors.price_per_match" class="field-error">{{ fieldErrors.price_per_match }}</p>
+          </div>
+          <div>
+            <label class="mb-2 block text-sm text-slate-300">Giá theo giờ (VND) *</label>
+            <input
+              v-model.number="form.price_per_hour"
+              :class="fieldClass('price_per_hour')"
+              min="0"
+              type="number"
+              placeholder="100000"
+              @blur="markTouched('price_per_hour')"
+              @input="validateField('price_per_hour')"
+            />
+            <p v-if="touched.price_per_hour && fieldErrors.price_per_hour" class="field-error">{{ fieldErrors.price_per_hour }}</p>
+          </div>
+        </div>
+
+        <div class="mt-8 border-t border-white/10 pt-6">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="profile-form-section__title">Tài khoản ngân hàng (VietQR)</p>
+              <p class="mt-2 text-sm text-slate-400">
+                Bắt buộc nếu muốn khách nhận mã QR thanh toán khi booking. Thiếu STK sẽ không tạo được QR.
+              </p>
+            </div>
+            <span
+              class="rounded-full px-3 py-1 text-xs font-medium"
+              :class="hasBankConfigured ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200'"
+            >
+              {{ hasBankConfigured ? 'Đã cấu hình QR' : 'Chưa cấu hình QR' }}
+            </span>
+          </div>
+
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm text-slate-300">Ngân hàng *</label>
+              <select
+                v-model="form.bank_code"
+                :class="fieldClass('bank_code')"
+                @blur="markTouched('bank_code')"
+                @change="validateField('bank_code'); validateField('bank_account_number'); validateField('bank_account_name')"
+              >
+                <option value="">Chọn ngân hàng</option>
+                <option v-for="bank in VN_BANKS" :key="bank.code" :value="bank.code">
+                  {{ bank.name }}
+                </option>
+              </select>
+              <p v-if="touched.bank_code && fieldErrors.bank_code" class="field-error">{{ fieldErrors.bank_code }}</p>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm text-slate-300">Số tài khoản *</label>
+              <input
+                v-model="form.bank_account_number"
+                :class="fieldClass('bank_account_number')"
+                type="text"
+                inputmode="numeric"
+                placeholder="0123456789"
+                @blur="markTouched('bank_account_number')"
+                @input="validateField('bank_account_number')"
+              />
+              <p v-if="touched.bank_account_number && fieldErrors.bank_account_number" class="field-error">
+                {{ fieldErrors.bank_account_number }}
+              </p>
+            </div>
+            <div class="md:col-span-2">
+              <label class="mb-2 block text-sm text-slate-300">Tên chủ tài khoản *</label>
+              <input
+                v-model="form.bank_account_name"
+                :class="fieldClass('bank_account_name')"
+                type="text"
+                placeholder="NGUYEN VAN A"
+                @blur="markTouched('bank_account_name')"
+                @input="validateField('bank_account_name')"
+              />
+              <p v-if="touched.bank_account_name && fieldErrors.bank_account_name" class="field-error">
+                {{ fieldErrors.bank_account_name }}
+              </p>
+              <p class="mt-2 text-xs text-slate-500">Nên viết hoa không dấu, khớp tên trên ứng dụng ngân hàng.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -336,16 +607,16 @@ onMounted(loadProfile)
         <div class="mt-4 grid gap-5 lg:grid-cols-2 lg:items-start">
           <ColorField
             :model-value="form.primary_color || '#FF007F'"
-            label="Màu chính (Primary)"
+            label="Màu chính"
             @update:model-value="form.primary_color = $event"
           />
           <ColorField
             :model-value="form.text_color || '#111111'"
-            label="Màu chữ (Text)"
+            label="Màu chữ"
             @update:model-value="form.text_color = $event"
           />
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Theme mode</label>
+            <label class="mb-2 block text-sm text-slate-300">Chế độ giao diện</label>
             <select v-model="form.theme_mode" class="field">
               <option v-for="option in themeModeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -359,7 +630,7 @@ onMounted(loadProfile)
             </select>
           </div>
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Background type</label>
+            <label class="mb-2 block text-sm text-slate-300">Kiểu nền</label>
             <select v-model="form.bg_type" class="field">
               <option v-for="option in bgTypeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -367,7 +638,7 @@ onMounted(loadProfile)
             </select>
           </div>
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Avatar style</label>
+            <label class="mb-2 block text-sm text-slate-300">Kiểu avatar</label>
             <select v-model="form.avatar_style" class="field">
               <option v-for="option in avatarStyleOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -382,7 +653,7 @@ onMounted(loadProfile)
             @apply-theme="applyThemeFromBackground"
           />
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Button style</label>
+            <label class="mb-2 block text-sm text-slate-300">Kiểu nút</label>
             <select v-model="form.button_style" class="field">
               <option v-for="option in buttonStyleOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -407,8 +678,8 @@ onMounted(loadProfile)
       <section v-show="activeTab === 'preview'" class="glass-panel page-panel overflow-hidden rounded-[2rem]">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p class="profile-form-section__title !mb-1">Live preview</p>
-            <p class="text-sm text-slate-400">Đây là trang public khách hàng sẽ thấy.</p>
+            <p class="profile-form-section__title !mb-1">Xem trước trực tiếp</p>
+            <p class="text-sm text-slate-400">Đây là trang công khai khách hàng sẽ thấy.</p>
           </div>
           <a
             v-if="publicProfileLink"

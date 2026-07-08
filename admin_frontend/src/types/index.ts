@@ -47,6 +47,14 @@ export interface BookingRow {
   guest_zalo: string | null;
   guest_messenger: string | null;
   scheduled_at: string;
+  pricing_type?: string;
+  quantity?: number;
+  unit_price?: number;
+  total_amount?: number;
+  currency?: string;
+  payment_qr_url?: string | null;
+  payment_code?: string | null;
+  payment_status?: string;
   status: string;
   notes: string | null;
   kol_display_name: string | null;

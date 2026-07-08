@@ -18,8 +18,8 @@ function defaultData(type: BlockType): Record<string, unknown> {
       return { phone: null, zalo: null, messenger: null }
     case 'booking':
       return {
-        title: 'Request a campaign',
-        subtitle: 'Share your campaign goals and preferred schedule.',
+        title: 'Gửi yêu cầu hợp tác',
+        subtitle: 'Chia sẻ mục tiêu chiến dịch và lịch mong muốn.',
       }
     default:
       return {}
@@ -156,12 +156,12 @@ export function getVisibleBlocks(profile: UserProfile): ProfileBlock[] {
 }
 
 export const BLOCK_LIBRARY: Array<{ type: BlockType; label: string; description: string }> = [
-  { type: 'social_links', label: 'Social links', description: 'Instagram, TikTok, website and more.' },
-  { type: 'gallery', label: 'Gallery', description: 'Showcase photos related to your brand.' },
-  { type: 'qr_codes', label: 'QR codes', description: 'Zalo, booking or payment QR images.' },
-  { type: 'about', label: 'About', description: 'Longer story or campaign highlights.' },
-  { type: 'contact', label: 'Contact', description: 'Phone, Zalo and Messenger.' },
-  { type: 'booking', label: 'Booking form', description: 'Let clients request a campaign.' },
+  { type: 'social_links', label: 'Mạng xã hội', description: 'Instagram, TikTok, website và hơn thế.' },
+  { type: 'gallery', label: 'Thư viện ảnh', description: 'Trưng bày ảnh liên quan đến thương hiệu.' },
+  { type: 'qr_codes', label: 'Mã QR', description: 'QR Zalo, đặt lịch hoặc thanh toán.' },
+  { type: 'about', label: 'Giới thiệu', description: 'Câu chuyện dài hơn hoặc highlight chiến dịch.' },
+  { type: 'contact', label: 'Liên hệ', description: 'Điện thoại, Zalo và Messenger.' },
+  { type: 'booking', label: 'Form đặt lịch', description: 'Cho khách gửi yêu cầu hợp tác.' },
 ]
 
 export function createBlock(type: BlockType, order: number): ProfileBlock {
@@ -183,5 +183,5 @@ export const SOCIAL_PLATFORM_LABELS: Record<string, string> = {
   website: 'Website',
   shopee: 'Shopee',
   zalo: 'Zalo',
-  other: 'Link',
+  other: 'Liên kết',
 }

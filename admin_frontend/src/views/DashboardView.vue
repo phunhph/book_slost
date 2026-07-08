@@ -2,27 +2,27 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-slate-800">Dashboard</h1>
-        <p class="text-sm text-slate-500">Tong quan van hanh he thong voi bieu do tu du lieu booking thuc te.</p>
+        <h1 class="text-2xl font-bold text-slate-800">Tổng quan</h1>
+        <p class="text-sm text-slate-500">Tổng quan vận hành hệ thống với biểu đồ từ dữ liệu booking thực tế.</p>
       </div>
       <div class="rounded-lg bg-white px-4 py-3 text-sm text-slate-500 card-shadow">
-        Cap nhat luc <span class="font-semibold text-slate-700">{{ updatedAt }}</span>
+        Cập nhật lúc <span class="font-semibold text-slate-700">{{ updatedAt }}</span>
       </div>
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard label="Tong KOL" :value="stats?.total_kols ?? 0" color="primary" />
-      <StatCard label="Khach hang" :value="stats?.total_customers ?? 0" color="success" />
-      <StatCard label="Tong booking" :value="stats?.total_bookings ?? 0" color="info" />
-      <StatCard label="Cho xu ly" :value="stats?.pending_bookings ?? 0" color="warning" />
+      <StatCard label="Tổng KOL" :value="stats?.total_kols ?? 0" color="primary" />
+      <StatCard label="Khách hàng" :value="stats?.total_customers ?? 0" color="success" />
+      <StatCard label="Tổng booking" :value="stats?.total_bookings ?? 0" color="info" />
+      <StatCard label="Chờ xử lý" :value="stats?.pending_bookings ?? 0" color="warning" />
     </div>
 
     <div class="grid gap-6 lg:grid-cols-[2fr_1fr]">
       <section class="rounded-xl border border-[var(--sb-card-border)] bg-white p-5 card-shadow">
         <div class="mb-5 flex items-center justify-between">
           <div>
-            <h2 class="text-lg font-bold text-slate-800">Xu huong booking</h2>
-            <p class="text-sm text-slate-500">So booking phat sinh trong 6 thang gan nhat</p>
+            <h2 class="text-lg font-bold text-slate-800">Xu hướng booking</h2>
+            <p class="text-sm text-slate-500">Số booking phát sinh trong 6 tháng gần nhất</p>
           </div>
         </div>
         <div class="h-[240px] sm:h-[300px] lg:h-[320px]">
@@ -32,8 +32,8 @@
 
       <section class="rounded-xl border border-[var(--sb-card-border)] bg-white p-5 card-shadow">
         <div class="mb-5">
-          <h2 class="text-lg font-bold text-slate-800">Trang thai booking</h2>
-          <p class="text-sm text-slate-500">Ty trong theo tung trang thai xu ly</p>
+          <h2 class="text-lg font-bold text-slate-800">Trạng thái booking</h2>
+          <p class="text-sm text-slate-500">Tỷ trọng theo từng trạng thái xử lý</p>
         </div>
         <div class="mx-auto h-[240px] max-w-[320px] sm:h-[300px] lg:h-[320px]">
           <Doughnut :data="bookingStatusData" :options="doughnutOptions" />
@@ -44,8 +44,8 @@
     <div class="grid gap-6 lg:grid-cols-[1.35fr_1fr]">
       <section class="rounded-xl border border-[var(--sb-card-border)] bg-white p-5 card-shadow">
         <div class="mb-5">
-          <h2 class="text-lg font-bold text-slate-800">Quy mo he thong</h2>
-          <p class="text-sm text-slate-500">So sanh cac nhom du lieu chinh trong he thong</p>
+          <h2 class="text-lg font-bold text-slate-800">Quy mô hệ thống</h2>
+          <p class="text-sm text-slate-500">So sánh các nhóm dữ liệu chính trong hệ thống</p>
         </div>
         <div class="h-[240px] sm:h-[280px] lg:h-[300px]">
           <Bar :data="systemOverviewData" :options="horizontalBarOptions" />
@@ -54,34 +54,34 @@
 
       <section class="rounded-xl border border-[var(--sb-card-border)] bg-white p-5 card-shadow">
         <div class="mb-5">
-          <h2 class="text-lg font-bold text-slate-800">Nhan dinh nhanh</h2>
-          <p class="text-sm text-slate-500">Insight nhanh cho admin theo tinh trang hien tai</p>
+          <h2 class="text-lg font-bold text-slate-800">Nhận định nhanh</h2>
+          <p class="text-sm text-slate-500">Insight nhanh cho admin theo tình trạng hiện tại</p>
         </div>
         <div class="space-y-4">
           <div class="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-[var(--sb-primary)]">Booking mo</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--sb-primary)]">Booking mở</div>
             <div class="mt-1 text-sm text-slate-600">
-              <span class="font-bold text-slate-800">{{ openBookings }}</span> booking dang o trang thai pending/confirmed.
+              <span class="font-bold text-slate-800">{{ openBookings }}</span> booking đang ở trạng thái chờ xử lý/đã xác nhận.
             </div>
           </div>
           <div class="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-emerald-600">Ti le chuyen doi</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-emerald-600">Tỷ lệ chuyển đổi</div>
             <div class="mt-1 text-sm text-slate-600">
-              <span class="font-bold text-slate-800">{{ completionRate }}%</span> booking da hoan thanh tren tong booking.
+              <span class="font-bold text-slate-800">{{ completionRate }}%</span> booking đã hoàn thành trên tổng booking.
             </div>
           </div>
           <div class="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-cyan-600">Tap trung KOL</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-cyan-600">Tập trung KOL</div>
             <div class="mt-1 text-sm text-slate-600">
-              KOL co nhieu booking nhat:
+              KOL có nhiều booking nhất:
               <span class="font-bold text-slate-800">{{ busiestKol }}</span>
             </div>
           </div>
           <div class="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
-            <div class="text-xs font-bold uppercase tracking-wider text-violet-600">Do day du du lieu</div>
+            <div class="text-xs font-bold uppercase tracking-wider text-violet-600">Độ đầy đủ dữ liệu</div>
             <div class="mt-1 text-sm text-slate-600">
-              <span class="font-bold text-slate-800">{{ activeKols }}/{{ kols.length }}</span> KOL dang active,
-              <span class="font-bold text-slate-800"> {{ customersWithPhone }}/{{ customers.length }}</span> khach hang co SDT.
+              <span class="font-bold text-slate-800">{{ activeKols }}/{{ kols.length }}</span> KOL đang active,
+              <span class="font-bold text-slate-800"> {{ customersWithPhone }}/{{ customers.length }}</span> khách hàng có SĐT.
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@ const bookingTrendData = computed(() => {
     labels,
     datasets: [
       {
-        label: "Bookings",
+        label: "Booking",
         data: counts,
         backgroundColor: "rgba(78, 115, 223, 0.85)",
         borderRadius: 8,
@@ -163,7 +163,7 @@ const bookingTrendData = computed(() => {
 });
 
 const bookingStatusData = computed(() => ({
-  labels: ["Pending", "Confirmed", "Completed", "Cancelled"],
+  labels: ["Chờ xử lý", "Đã xác nhận", "Hoàn thành", "Đã hủy"],
   datasets: [
     {
       data: [
@@ -179,10 +179,10 @@ const bookingStatusData = computed(() => ({
 }));
 
 const systemOverviewData = computed(() => ({
-  labels: ["KOL", "Khach hang", "Bookings", "Dang cho xu ly"],
+  labels: ["KOL", "Khách hàng", "Booking", "Đang chờ xử lý"],
   datasets: [
     {
-      label: "So luong",
+      label: "Số lượng",
       data: [
         stats.value?.total_kols ?? 0,
         stats.value?.total_customers ?? 0,
@@ -205,13 +205,13 @@ const activeKols = computed(() => kols.value.filter((item) => item.is_active).le
 const customersWithPhone = computed(() => customers.value.filter((item) => Boolean(item.phone)).length);
 
 const busiestKol = computed(() => {
-  if (!bookings.value.length) return "Chua co du lieu";
+  if (!bookings.value.length) return "Chưa có dữ liệu";
   const countMap = new Map<string, number>();
   bookings.value.forEach((booking) => {
-    const name = booking.kol_display_name || booking.kol_username || "Khong ro";
+    const name = booking.kol_display_name || booking.kol_username || "Không rõ";
     countMap.set(name, (countMap.get(name) ?? 0) + 1);
   });
-  return [...countMap.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "Chua co du lieu";
+  return [...countMap.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "Chưa có dữ liệu";
 });
 
 const barOptions = {

@@ -14,7 +14,7 @@ function label(item: SocialLinkItem) {
 
 <template>
   <section class="profile-section">
-    <p class="profile-section__label">Connect</p>
+    <p class="profile-section__label">Kết nối</p>
     <div class="flex flex-wrap gap-3">
       <a
         v-for="(item, index) in items"

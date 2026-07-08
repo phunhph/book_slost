@@ -4,18 +4,18 @@
       <div class="mb-8 text-center">
         <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--sb-primary)] text-xl font-bold text-white">AB</div>
         <h1 class="text-2xl font-bold text-slate-800">Admin Backoffice</h1>
-        <p class="mt-2 text-sm text-slate-500">Dang nhap de quan ly KOL, khach hang va booking</p>
+        <p class="mt-2 text-sm text-slate-500">Đăng nhập để quản lý KOL, khách hàng và booking</p>
       </div>
 
       <a
         :href="googleUrl"
         class="mb-4 flex h-11 w-full items-center justify-center rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
       >
-        Dang nhap voi Google
+        Đăng nhập với Google
       </a>
 
       <div class="relative my-6 text-center text-xs uppercase tracking-wider text-slate-400">
-        <span class="bg-white px-3">hoac</span>
+        <span class="bg-white px-3">hoặc</span>
       </div>
 
       <form class="space-y-4" @submit.prevent="handleSubmit">
@@ -24,12 +24,12 @@
           <input v-model="email" type="email" required class="field" placeholder="admin@example.com" />
         </div>
         <div>
-          <label class="mb-2 block text-sm font-semibold text-slate-700">Mat khau</label>
+          <label class="mb-2 block text-sm font-semibold text-slate-700">Mật khẩu</label>
           <input v-model="password" type="password" required class="field" placeholder="••••••••" />
         </div>
         <p v-if="auth.error" class="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ auth.error }}</p>
         <button type="submit" class="btn-primary w-full" :disabled="auth.loading">
-          {{ auth.loading ? "Dang xu ly..." : "Dang nhap" }}
+          {{ auth.loading ? "Đang xử lý..." : "Đăng nhập" }}
         </button>
       </form>
     </div>

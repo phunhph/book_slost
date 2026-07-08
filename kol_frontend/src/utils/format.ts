@@ -17,6 +17,13 @@ export function startOfDayKey(value: string) {
   return new Date(value).toISOString().slice(0, 10)
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Chờ xử lý',
+  confirmed: 'Đã xác nhận',
+  completed: 'Hoàn thành',
+  cancelled: 'Đã hủy',
+}
+
 export function formatStatus(status: string) {
-  return status.charAt(0).toUpperCase() + status.slice(1)
+  return STATUS_LABELS[status] ?? status.charAt(0).toUpperCase() + status.slice(1)
 }

@@ -36,29 +36,29 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard label="Total bookings" :value="stats?.total_bookings ?? '--'" caption="All requests received" />
-      <StatCard label="Confirmed" :value="confirmedCount" caption="Ready to deliver" />
-      <StatCard label="Completed" :value="completedCount" caption="Finished successfully" />
-      <StatCard label="Completion rate" :value="conversionRate" caption="Completed vs total bookings" />
+      <StatCard label="Tổng booking" :value="stats?.total_bookings ?? '--'" caption="Tất cả yêu cầu nhận được" />
+      <StatCard label="Đã xác nhận" :value="confirmedCount" caption="Sẵn sàng thực hiện" />
+      <StatCard label="Đã hoàn thành" :value="completedCount" caption="Hoàn tất thành công" />
+      <StatCard label="Tỷ lệ hoàn thành" :value="conversionRate" caption="Hoàn thành so với tổng booking" />
     </section>
 
     <section class="glass-panel page-panel rounded-[2rem]">
-      <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Snapshot</p>
-      <h3 class="mt-2 text-xl font-semibold text-white sm:text-2xl">Creator performance summary</h3>
+      <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Ảnh chụp nhanh</p>
+      <h3 class="mt-2 text-xl font-semibold text-white sm:text-2xl">Tóm tắt hiệu suất creator</h3>
 
-      <div v-if="loading" class="mt-6 text-sm text-slate-400">Loading report data...</div>
+      <div v-if="loading" class="mt-6 text-sm text-slate-400">Đang tải dữ liệu báo cáo...</div>
 
       <div v-else class="mt-6 grid gap-4 md:grid-cols-2">
         <div class="rounded-[1.75rem] border border-white/8 bg-white/4 p-5">
-          <p class="text-sm text-slate-300">Pending backlog</p>
+          <p class="text-sm text-slate-300">Tồn đọng chờ xử lý</p>
           <p class="mt-3 text-3xl font-semibold text-white">{{ stats?.pending_bookings ?? 0 }}</p>
-          <p class="mt-2 text-sm text-slate-400">Requests waiting for response or confirmation.</p>
+          <p class="mt-2 text-sm text-slate-400">Yêu cầu đang chờ phản hồi hoặc xác nhận.</p>
         </div>
 
         <div class="rounded-[1.75rem] border border-white/8 bg-white/4 p-5">
-          <p class="text-sm text-slate-300">Upcoming workload</p>
+          <p class="text-sm text-slate-300">Khối lượng sắp tới</p>
           <p class="mt-3 text-3xl font-semibold text-white">{{ stats?.upcoming_bookings ?? 0 }}</p>
-          <p class="mt-2 text-sm text-slate-400">Future sessions still on your calendar.</p>
+          <p class="mt-2 text-sm text-slate-400">Buổi làm việc tương lai vẫn còn trên lịch.</p>
         </div>
       </div>
     </section>

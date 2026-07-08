@@ -1,6 +1,8 @@
 export interface BookingCreatePayload {
   kol_user_id: string;
   scheduled_at: string;
+  pricing_type?: "match" | "hourly";
+  quantity?: number;
   notes?: string;
   guest_name?: string;
   guest_phone?: string;
@@ -17,6 +19,14 @@ export interface BookingResponse {
   guest_zalo: string | null;
   guest_messenger: string | null;
   scheduled_at: string;
+  pricing_type: string;
+  quantity: number;
+  unit_price: number;
+  total_amount: number;
+  currency: string;
+  payment_qr_url: string | null;
+  payment_code: string | null;
+  payment_status: string;
   status: string;
   notes: string | null;
   created_at: string;
@@ -24,4 +34,7 @@ export interface BookingResponse {
   kol_display_name: string | null;
   kol_username: string | null;
   customer_email: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_name?: string | null;
 }

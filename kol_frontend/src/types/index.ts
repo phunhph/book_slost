@@ -30,6 +30,14 @@ export interface Booking {
   guest_zalo: string | null
   guest_messenger: string | null
   scheduled_at: string
+  pricing_type?: string
+  quantity?: number
+  unit_price?: number
+  total_amount?: number
+  currency?: string
+  payment_qr_url?: string | null
+  payment_code?: string | null
+  payment_status?: string
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
   notes: string | null
   created_at: string
@@ -107,6 +115,14 @@ export interface UserProfile {
   phone: string | null
   zalo: string | null
   messenger: string | null
+  pricing_type: string
+  price_per_match: number
+  price_per_hour: number
+  currency: string
+  bank_name?: string | null
+  bank_code?: string | null
+  bank_account_number?: string | null
+  bank_account_name?: string | null
   layout_structure: ProfileLayoutV2 | Record<string, unknown>
   created_at: string
   updated_at: string
@@ -128,5 +144,13 @@ export interface ProfileUpdatePayload {
   phone?: string | null
   zalo?: string | null
   messenger?: string | null
+  pricing_type?: string | null
+  price_per_match?: number | null
+  price_per_hour?: number | null
+  currency?: string | null
+  bank_name?: string | null
+  bank_code?: string | null
+  bank_account_number?: string | null
+  bank_account_name?: string | null
   layout_structure?: ProfileLayoutV2 | null
 }

@@ -79,7 +79,7 @@ const showQuickContactInHero = computed(() => !blocks.value.some((block) => bloc
         <BookingPreviewBlock
           v-else-if="block.type === 'booking'"
           :profile="displayProfile"
-          :title="String(block.data.title ?? 'Request a campaign')"
+          :title="String(block.data.title ?? 'Gửi yêu cầu hợp tác')"
           :subtitle="String(block.data.subtitle ?? '')"
         />
       </template>

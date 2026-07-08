@@ -27,6 +27,21 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (!error.response) {
+      error.message =
+        'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và đảm bảo backend đang chạy tại http://localhost:8000.'
+    } else if (typeof error.response.data?.detail === 'string') {
+      error.message = error.response.data.detail
+    } else if (Array.isArray(error.response.data?.detail) && error.response.data.detail[0]?.msg) {
+      error.message = String(error.response.data.detail[0].msg)
+    }
+    return Promise.reject(error)
+  },
+)
+
 export async function loginLocal(email: string, password: string) {
   const { data } = await api.post<AuthResponse>('/auth/login-local', { email, password })
   return data

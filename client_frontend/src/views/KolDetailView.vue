@@ -3,6 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ProfilePageRenderer from '@/components/profile/ProfilePageRenderer.vue'
+import { getErrorMessage } from '@/lib/errors'
 import { getPublicProfile } from '@/services/public'
 import { useToastStore } from '@/stores/toast'
 import type { UserProfile } from '@/types/profile'
@@ -16,24 +17,28 @@ const emit = defineEmits<{
 const profile = ref<UserProfile | null>(null)
 const isLoading = ref(true)
 const loadFailed = ref(false)
+const loadError = ref('')
 
 async function loadProfile() {
   const username = String(route.params.username ?? '')
   if (!username) {
     loadFailed.value = true
-    toast.error('Missing creator username.')
+    loadError.value = 'Thiếu tên creator trên đường dẫn.'
+    toast.error(loadError.value)
     isLoading.value = false
     return
   }
 
   isLoading.value = true
   loadFailed.value = false
+  loadError.value = ''
 
   try {
     profile.value = await getPublicProfile(username)
   } catch (error) {
     loadFailed.value = true
-    toast.error(error instanceof Error ? error.message : 'Unable to load creator profile.')
+    loadError.value = getErrorMessage(error, 'Không tải được hồ sơ creator.')
+    toast.error(loadError.value)
   } finally {
     isLoading.value = false
   }
@@ -49,8 +54,8 @@ watch(() => route.params.username, loadProfile)
   </section>
 
   <section v-else-if="loadFailed" class="page-container py-10">
-    <div class="rounded-2xl border border-white/10 bg-white/6 p-6 text-slate-300">
-      Không tải được trang creator này.
+    <div class="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-6 text-rose-100">
+      {{ loadError || 'Không tải được trang creator này.' }}
     </div>
   </section>
 

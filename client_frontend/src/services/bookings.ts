@@ -1,8 +1,8 @@
-import { API_URL, authHeaders, parseApiError } from "@/lib/api";
+import { API_URL, authHeaders, apiFetch, parseApiError } from "@/lib/api";
 import type { BookingCreatePayload, BookingResponse } from "@/types/booking";
 
 export async function createBooking(payload: BookingCreatePayload, token?: string): Promise<BookingResponse> {
-  const response = await fetch(`${API_URL}/bookings`, {
+  const response = await apiFetch(`${API_URL}/bookings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -12,7 +12,7 @@ export async function createBooking(payload: BookingCreatePayload, token?: strin
   });
 
   if (!response.ok) {
-    return parseApiError(response, "Unable to submit booking.");
+    return parseApiError(response, "Không gửi được yêu cầu đặt lịch.");
   }
 
   return response.json() as Promise<BookingResponse>;

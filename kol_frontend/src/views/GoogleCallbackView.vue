@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
+import { getErrorMessage } from '../utils/errors'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,13 +18,13 @@ onMounted(async () => {
 
   if (oauthError) {
     hasError.value = true
-    toast.error(oauthError)
+    toast.error(getErrorMessage(oauthError, 'Đăng nhập Google thất bại.'))
     return
   }
 
   if (!accessToken) {
     hasError.value = true
-    toast.error('Google login did not return an access token.')
+    toast.error('Google không trả về access token.')
     return
   }
 
@@ -33,7 +34,7 @@ onMounted(async () => {
     await router.replace('/dashboard')
   } catch (error) {
     hasError.value = true
-    toast.error(error instanceof Error ? error.message : 'Google login failed.')
+    toast.error(getErrorMessage(error, 'Đăng nhập Google thất bại.'))
   }
 })
 </script>
@@ -43,17 +44,17 @@ onMounted(async () => {
     <div class="glass-panel w-full max-w-xl rounded-[2rem] p-8 text-center">
       <template v-if="!hasError">
         <p class="text-sm uppercase tracking-[0.35em] text-violet-300/85">Google OAuth</p>
-        <h1 class="mt-4 text-3xl font-semibold text-white">Completing your sign in...</h1>
+        <h1 class="mt-4 text-3xl font-semibold text-white">Đang hoàn tất đăng nhập...</h1>
         <p class="mt-3 text-slate-300">
-          We are verifying your Google account and preparing the KOL workspace.
+          Hệ thống đang xác minh tài khoản Google và chuẩn bị không gian làm việc KOL.
         </p>
       </template>
 
       <template v-else>
-        <p class="text-sm uppercase tracking-[0.35em] text-rose-300/85">Sign in error</p>
-        <h1 class="mt-4 text-3xl font-semibold text-white">Unable to finish Google login</h1>
+        <p class="text-sm uppercase tracking-[0.35em] text-rose-300/85">Lỗi đăng nhập</p>
+        <h1 class="mt-4 text-3xl font-semibold text-white">Không thể hoàn tất đăng nhập Google</h1>
         <p class="mt-3 text-slate-300">Kiểm tra thông báo ở góc trên bên phải.</p>
-        <RouterLink class="btn-primary mt-6 inline-flex" to="/login">Return to login</RouterLink>
+        <RouterLink class="btn-primary mt-6 inline-flex" to="/login">Quay lại đăng nhập</RouterLink>
       </template>
     </div>
   </div>

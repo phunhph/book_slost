@@ -19,12 +19,12 @@ const auth = useAuthStore()
 const mobileMenuOpen = ref(false)
 
 const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: HomeIcon },
-  { label: 'Customize Profile', to: '/profile', icon: UserCircleIcon },
-  { label: 'Bookings', to: '/bookings', icon: ClipboardDocumentListIcon },
-  { label: 'Calendar', to: '/calendar', icon: CalendarDaysIcon },
-  { label: 'History', to: '/history', icon: ClipboardDocumentListIcon },
-  { label: 'Reports', to: '/reports', icon: ChartBarSquareIcon },
+  { label: 'Tổng quan', to: '/dashboard', icon: HomeIcon },
+  { label: 'Tùy chỉnh hồ sơ', to: '/profile', icon: UserCircleIcon },
+  { label: 'Đặt lịch', to: '/bookings', icon: ClipboardDocumentListIcon },
+  { label: 'Lịch', to: '/calendar', icon: CalendarDaysIcon },
+  { label: 'Lịch sử', to: '/history', icon: ClipboardDocumentListIcon },
+  { label: 'Báo cáo', to: '/reports', icon: ChartBarSquareIcon },
 ]
 
 const initials = computed(() => {
@@ -34,7 +34,7 @@ const initials = computed(() => {
 
 const pageTitle = computed(() => {
   const current = navItems.find((item) => item.to === route.path)
-  return current?.label ?? 'Workspace'
+  return current?.label ?? 'Không gian làm việc'
 })
 
 async function signOut() {
@@ -53,9 +53,9 @@ async function signOut() {
         <aside class="kol-sidebar glass-panel hidden flex-col rounded-[2rem] p-6 lg:flex">
           <div>
             <p class="text-xs uppercase tracking-[0.35em] text-fuchsia-300/80">Creator OS</p>
-            <h1 class="mt-3 text-2xl font-semibold text-white">KOL Workspace</h1>
+            <h1 class="mt-3 text-2xl font-semibold text-white">Không gian KOL</h1>
             <p class="mt-2 text-sm text-slate-300">
-              Manage your personal brand, public profile, bookings, schedule, and creator performance in one place.
+              Quản lý thương hiệu cá nhân, hồ sơ công khai, đặt lịch, lịch làm việc và hiệu suất creator tại một nơi.
             </p>
           </div>
 
@@ -77,9 +77,9 @@ async function signOut() {
           </nav>
 
           <div class="mt-auto rounded-3xl border border-white/8 bg-white/4 p-4">
-            <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Signed in as</p>
+            <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Đăng nhập với</p>
             <p class="mt-2 truncate font-medium text-white">{{ auth.user?.email }}</p>
-            <p class="mt-1 text-sm text-slate-400">Role: {{ auth.user?.role }}</p>
+            <p class="mt-1 text-sm text-slate-400">Vai trò: {{ auth.user?.role }}</p>
           </div>
         </aside>
 
@@ -88,7 +88,7 @@ async function signOut() {
             <header class="glass-panel rounded-[2rem] px-4 py-4 sm:px-5">
               <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
-                  <p class="text-xs uppercase tracking-[0.35em] text-violet-300/90">Creator dashboard</p>
+                  <p class="text-xs uppercase tracking-[0.35em] text-violet-300/90">Bảng điều khiển creator</p>
                   <h2 class="mt-2 truncate text-xl font-semibold text-white sm:text-2xl">{{ pageTitle }}</h2>
                 </div>
 
@@ -99,13 +99,13 @@ async function signOut() {
                     </div>
                     <div class="min-w-0">
                       <p class="truncate text-sm font-medium text-white">{{ auth.user?.email }}</p>
-                      <p class="text-xs text-slate-400">KOL account</p>
+                      <p class="text-xs text-slate-400">Tài khoản KOL</p>
                     </div>
                   </div>
 
                   <button class="btn-secondary flex shrink-0 items-center gap-2" type="button" @click="signOut">
                     <ArrowRightStartOnRectangleIcon class="size-5" />
-                    <span class="hidden sm:inline">Logout</span>
+                    <span class="hidden sm:inline">Đăng xuất</span>
                   </button>
 
                   <button
@@ -117,7 +117,7 @@ async function signOut() {
                   >
                     <XMarkIcon v-if="mobileMenuOpen" class="size-5" />
                     <Bars3Icon v-else class="size-5" />
-                    <span class="sr-only">Toggle navigation</span>
+                    <span class="sr-only">Mở điều hướng</span>
                   </button>
                 </div>
               </div>

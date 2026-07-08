@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 import { googleOAuthUrl } from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
+import { getErrorMessage } from '../utils/errors'
+
+type FieldName = 'email' | 'password'
 
 const auth = useAuthStore()
 const toast = useToastStore()
@@ -13,25 +15,58 @@ const router = useRouter()
 
 const email = ref('')
 const password = ref('')
+const fieldErrors = reactive<Partial<Record<FieldName, string>>>({})
+const touched = reactive<Partial<Record<FieldName, boolean>>>({})
 
 const redirectTarget = computed(() => {
   return typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
 })
 
+function fieldClass(field: FieldName) {
+  return ['field', touched[field] && fieldErrors[field] ? 'field--error' : '']
+}
+
+function validateField(field: FieldName): string {
+  let message = ''
+  if (field === 'email') {
+    const value = email.value.trim()
+    if (!value) message = 'Vui lòng nhập email.'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) message = 'Email không hợp lệ.'
+  }
+  if (field === 'password') {
+    if (!password.value) message = 'Vui lòng nhập mật khẩu.'
+    else if (password.value.length < 8) message = 'Mật khẩu tối thiểu 8 ký tự.'
+  }
+  if (message) fieldErrors[field] = message
+  else delete fieldErrors[field]
+  return message
+}
+
+function markTouched(field: FieldName) {
+  touched[field] = true
+  validateField(field)
+}
+
+function validateForm() {
+  let ok = true
+  for (const field of ['email', 'password'] as FieldName[]) {
+    touched[field] = true
+    if (validateField(field)) ok = false
+  }
+  return ok
+}
+
 async function submit() {
+  if (!validateForm()) {
+    toast.error('Vui lòng sửa các ô đang báo lỗi.')
+    return
+  }
+
   try {
-    await auth.login(email.value, password.value)
+    await auth.login(email.value.trim(), password.value)
     await router.push(redirectTarget.value)
   } catch (error) {
-    if (axios.isAxiosError(error) && !error.response) {
-      toast.error(
-        'Cannot reach API server. Start backend on port 8000 or open this app via http://localhost:3002 instead of a LAN IP.',
-      )
-      return
-    }
-
-    const message = error instanceof Error ? error.message : 'Unable to sign in.'
-    toast.error(message)
+    toast.error(getErrorMessage(error, 'Không thể đăng nhập.'))
   }
 }
 </script>
@@ -42,67 +77,77 @@ async function submit() {
       <section class="glass-panel rounded-[2rem] p-6 sm:p-8 lg:p-10">
         <p class="text-sm uppercase tracking-[0.35em] text-fuchsia-300/85">Violet Studio</p>
         <h1 class="mt-4 max-w-xl text-3xl font-semibold leading-tight text-white sm:text-4xl lg:text-5xl">
-          Professional creator operations for your KOL workflow.
+          Vận hành creator chuyên nghiệp cho quy trình KOL của bạn.
         </h1>
         <p class="mt-5 max-w-2xl text-base text-slate-300">
-          Track new collaborations, manage your calendar, update your public presence, and stay
-          on top of every booking from one creator-focused workspace.
+          Theo dõi hợp tác mới, quản lý lịch, cập nhật hiện diện công khai và nắm mọi booking trong một không gian dành cho creator.
         </p>
 
         <div class="mt-8 grid gap-4 md:grid-cols-3">
           <div class="rounded-3xl border border-white/8 bg-white/5 p-5">
-            <p class="text-sm text-slate-300">Bookings in motion</p>
+            <p class="text-sm text-slate-300">Booking liên tục</p>
             <p class="mt-3 text-3xl font-semibold text-white">24/7</p>
           </div>
           <div class="rounded-3xl border border-white/8 bg-white/5 p-5">
-            <p class="text-sm text-slate-300">Creator-first views</p>
+            <p class="text-sm text-slate-300">Góc nhìn creator</p>
             <p class="mt-3 text-3xl font-semibold text-white">6</p>
           </div>
           <div class="rounded-3xl border border-white/8 bg-white/5 p-5">
-            <p class="text-sm text-slate-300">Workspace theme</p>
+            <p class="text-sm text-slate-300">Theme workspace</p>
             <p class="mt-3 text-3xl font-semibold text-white">Violet</p>
           </div>
         </div>
       </section>
 
       <section class="glass-panel rounded-[2rem] p-8 lg:p-10">
-        <p class="text-sm uppercase tracking-[0.35em] text-violet-300/85">Sign in</p>
-        <h2 class="mt-3 text-3xl font-semibold text-white">Access your KOL dashboard</h2>
+        <p class="text-sm uppercase tracking-[0.35em] text-violet-300/85">Đăng nhập</p>
+        <h2 class="mt-3 text-3xl font-semibold text-white">Vào bảng điều khiển KOL</h2>
         <p class="mt-3 text-sm text-slate-300">
-          Log in with your KOL account credentials or continue with Google.
+          Đăng nhập bằng tài khoản KOL hoặc tiếp tục với Google.
         </p>
 
-        <form class="mt-8 space-y-4" @submit.prevent="submit">
+        <form class="mt-8 space-y-4" novalidate @submit.prevent="submit">
           <div>
-            <label class="mb-2 block text-sm text-slate-300" for="email">Email</label>
-            <input id="email" v-model="email" class="field" type="email" autocomplete="email" required />
+            <label class="mb-2 block text-sm text-slate-300" for="email">Email *</label>
+            <input
+              id="email"
+              v-model="email"
+              :class="fieldClass('email')"
+              type="email"
+              autocomplete="email"
+              @blur="markTouched('email')"
+              @input="validateField('email')"
+            />
+            <p v-if="touched.email && fieldErrors.email" class="field-error">{{ fieldErrors.email }}</p>
           </div>
 
           <div>
-            <label class="mb-2 block text-sm text-slate-300" for="password">Password</label>
+            <label class="mb-2 block text-sm text-slate-300" for="password">Mật khẩu *</label>
             <input
               id="password"
               v-model="password"
-              class="field"
+              :class="fieldClass('password')"
               type="password"
               autocomplete="current-password"
-              required
+              @blur="markTouched('password')"
+              @input="validateField('password')"
             />
+            <p v-if="touched.password && fieldErrors.password" class="field-error">{{ fieldErrors.password }}</p>
           </div>
 
           <button class="btn-primary w-full" type="submit" :disabled="auth.loading">
-            {{ auth.loading ? 'Signing in...' : 'Login with email' }}
+            {{ auth.loading ? 'Đang đăng nhập...' : 'Đăng nhập bằng email' }}
           </button>
         </form>
 
         <div class="my-6 flex items-center gap-4">
           <div class="h-px flex-1 bg-white/10"></div>
-          <span class="text-xs uppercase tracking-[0.25em] text-slate-400">or</span>
+          <span class="text-xs uppercase tracking-[0.25em] text-slate-400">hoặc</span>
           <div class="h-px flex-1 bg-white/10"></div>
         </div>
 
         <a :href="googleOAuthUrl" class="btn-secondary flex w-full items-center justify-center gap-3">
-          <span>Continue with Google</span>
+          <span>Tiếp tục với Google</span>
         </a>
       </section>
     </div>

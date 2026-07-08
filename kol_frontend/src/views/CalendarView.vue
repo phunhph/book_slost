@@ -35,13 +35,13 @@ onMounted(async () => {
 
 <template>
   <div class="glass-panel page-panel rounded-[2rem]">
-    <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Calendar</p>
-    <h3 class="mt-2 text-xl font-semibold text-white sm:text-2xl">Bookings grouped by date</h3>
+    <p class="text-sm uppercase tracking-[0.3em] text-violet-300/80">Lịch</p>
+    <h3 class="mt-2 text-xl font-semibold text-white sm:text-2xl">Booking theo ngày</h3>
 
-    <div v-if="loading" class="mt-6 text-sm text-slate-400">Loading calendar...</div>
+    <div v-if="loading" class="mt-6 text-sm text-slate-400">Đang tải lịch...</div>
 
     <div v-else-if="!groupedBookings.length" class="mt-6 rounded-3xl border border-dashed border-white/10 p-6 text-sm text-slate-400">
-      No calendar items available.
+      Chưa có mục trên lịch.
     </div>
 
     <div v-else class="mt-6 grid gap-4 lg:grid-cols-2">
@@ -53,7 +53,7 @@ onMounted(async () => {
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h4 class="text-base font-semibold text-white sm:text-lg">{{ group.label }}</h4>
           <span class="w-fit shrink-0 rounded-full bg-violet-500/12 px-3 py-1 text-xs uppercase tracking-[0.25em] text-violet-200">
-            {{ group.items.length }} bookings
+            {{ group.items.length }} booking
           </span>
         </div>
 
@@ -66,7 +66,7 @@ onMounted(async () => {
             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div class="min-w-0">
                 <p class="truncate font-medium text-white">
-                  {{ booking.guest_name || booking.customer_email || 'Guest booking' }}
+                  {{ booking.guest_name || booking.customer_email || 'Khách đặt lịch' }}
                 </p>
                 <p class="mt-1 text-sm text-slate-400">{{ formatDateTime(booking.scheduled_at) }}</p>
               </div>

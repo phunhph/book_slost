@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,6 +39,14 @@ class UserProfile(Base):
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     zalo: Mapped[str | None] = mapped_column(String(100), nullable=True)
     messenger: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    pricing_type: Mapped[str] = mapped_column(String(30), default="match", nullable=False)
+    price_per_match: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    price_per_hour: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), default="VND", nullable=False)
+    bank_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bank_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    bank_account_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    bank_account_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     layout_structure: Mapped[list[dict]] = mapped_column(JSONB, default=lambda: DEFAULT_LAYOUT.copy(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

@@ -1,5 +1,11 @@
 <template>
-  <DataTable title="Danh sach khach hang" search-placeholder="Tim khach hang..." :columns="columns" :rows="rows" :search-keys="['email', 'display_name', 'phone']" />
+  <DataTable
+    title="Danh sách khách hàng"
+    search-placeholder="Tìm khách hàng..."
+    :columns="columns"
+    :rows="rows"
+    :search-keys="['email', 'display_name', 'phone']"
+  />
 </template>
 
 <script setup lang="ts">
@@ -13,10 +19,10 @@ import type { CustomerRow } from "@/types";
 const auth = useAuthStore();
 const rows = ref<CustomerRow[]>([]);
 const columns = [
-  { key: "display_name", label: "Ten" },
+  { key: "display_name", label: "Tên" },
   { key: "email", label: "Email" },
-  { key: "phone", label: "SDT" },
-  { key: "created_at", label: "Ngay tao" }
+  { key: "phone", label: "SĐT" },
+  { key: "created_at", label: "Ngày tạo" }
 ];
 
 onMounted(async () => {

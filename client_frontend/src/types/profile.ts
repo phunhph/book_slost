@@ -66,6 +66,14 @@ export interface UserProfile {
   phone: string | null
   zalo: string | null
   messenger: string | null
+  pricing_type: 'match' | 'hourly'
+  price_per_match: number
+  price_per_hour: number
+  currency: string
+  bank_name?: string | null
+  bank_code?: string | null
+  bank_account_number?: string | null
+  bank_account_name?: string | null
   layout_structure: ProfileLayoutV2 | Record<string, unknown>
   created_at: string
   updated_at: string
@@ -78,4 +86,9 @@ export interface KolPublicCard {
   bio: string | null
   avatar_url: string | null
   primary_color: string | null
+  pricing_type?: string | null
+  price_per_match?: number | null
+  price_per_hour?: number | null
+  currency?: string | null
+  has_bank_account?: boolean
 }

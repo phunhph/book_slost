@@ -25,7 +25,34 @@ export async function parseApiError(response: Response, fallbackMessage: string)
     throw new ApiError(String(detail[0].msg), response.status);
   }
 
+  if (response.status === 401) {
+    throw new ApiError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", response.status);
+  }
+  if (response.status === 403) {
+    throw new ApiError("Bạn không có quyền thực hiện thao tác này.", response.status);
+  }
+  if (response.status === 404) {
+    throw new ApiError("Không tìm thấy dữ liệu yêu cầu.", response.status);
+  }
+  if (response.status >= 500) {
+    throw new ApiError("Máy chủ đang gặp sự cố. Vui lòng thử lại sau.", response.status);
+  }
+
   throw new ApiError(fallbackMessage, response.status);
+}
+
+export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    const message =
+      error instanceof TypeError
+        ? "Không kết nối được máy chủ. Vui lòng kiểm tra mạng và đảm bảo backend đang chạy tại http://localhost:8000."
+        : error instanceof Error
+          ? error.message
+          : "Không kết nối được máy chủ.";
+    throw new ApiError(message, 0);
+  }
 }
 
 export function authHeaders(token?: string): HeadersInit {

@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { fetchMe, loginLocal } from "@/api/auth";
+import { getErrorMessage } from "@/lib/errors";
 import type { AuthUser } from "@/types";
 
 const TOKEN_KEY = "abc_access_token";
@@ -21,13 +22,13 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const response = await loginLocal(email, password);
       if (response.user.role !== "admin") {
-        throw new Error("Tai khoan nay khong co quyen admin.");
+        throw new Error("Tài khoản này không có quyền admin.");
       }
       token.value = response.access_token;
       user.value = response.user;
       localStorage.setItem(TOKEN_KEY, response.access_token);
     } catch (err) {
-      error.value = err instanceof Error ? err.message : "Dang nhap that bai.";
+      error.value = getErrorMessage(err, "Đăng nhập thất bại.");
       throw err;
     } finally {
       loading.value = false;
@@ -36,10 +37,15 @@ export const useAuthStore = defineStore("auth", () => {
 
   async function hydrate() {
     if (!token.value) return;
-    user.value = await fetchMe(token.value);
+    try {
+      user.value = await fetchMe(token.value);
+    } catch (err) {
+      logout();
+      throw new Error(getErrorMessage(err, "Không tải được phiên đăng nhập."));
+    }
     if (user.value.role !== "admin") {
       logout();
-      throw new Error("Tai khoan khong co quyen admin.");
+      throw new Error("Tài khoản không có quyền admin.");
     }
   }
 

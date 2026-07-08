@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_URL, authHeaders, parseApiError } from "@/lib/api";
+import { API_BASE_URL, API_URL, authHeaders, apiFetch, parseApiError } from "@/lib/api";
 import type { AuthResponse, AuthUser, LoginPayload, RegisterPayload } from "@/types/auth";
 import type { UserProfile } from "@/types/profile";
 
@@ -7,7 +7,7 @@ export function getGoogleOAuthUrl() {
 }
 
 export async function loginLocal(payload: LoginPayload): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/auth/login-local`, {
+  const response = await apiFetch(`${API_URL}/auth/login-local`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -16,14 +16,14 @@ export async function loginLocal(payload: LoginPayload): Promise<AuthResponse> {
   });
 
   if (!response.ok) {
-    return parseApiError(response, "Unable to sign in.");
+    return parseApiError(response, "Không thể đăng nhập.");
   }
 
   return response.json() as Promise<AuthResponse>;
 }
 
 export async function registerLocal(payload: RegisterPayload): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/auth/register-local`, {
+  const response = await apiFetch(`${API_URL}/auth/register-local`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -32,31 +32,31 @@ export async function registerLocal(payload: RegisterPayload): Promise<AuthRespo
   });
 
   if (!response.ok) {
-    return parseApiError(response, "Unable to create account.");
+    return parseApiError(response, "Không thể tạo tài khoản.");
   }
 
   return response.json() as Promise<AuthResponse>;
 }
 
 export async function fetchCurrentUser(token: string): Promise<AuthUser> {
-  const response = await fetch(`${API_URL}/auth/me`, {
+  const response = await apiFetch(`${API_URL}/auth/me`, {
     headers: authHeaders(token),
   });
 
   if (!response.ok) {
-    return parseApiError(response, "Unable to load your account.");
+    return parseApiError(response, "Không tải được thông tin tài khoản.");
   }
 
   return response.json() as Promise<AuthUser>;
 }
 
 export async function fetchProfileByUserId(userId: string, token?: string): Promise<UserProfile> {
-  const response = await fetch(`${API_URL}/profiles/by-user/${userId}`, {
+  const response = await apiFetch(`${API_URL}/profiles/by-user/${userId}`, {
     headers: authHeaders(token),
   });
 
   if (!response.ok) {
-    return parseApiError(response, "Unable to load profile details.");
+    return parseApiError(response, "Không tải được thông tin hồ sơ.");
   }
 
   return response.json() as Promise<UserProfile>;

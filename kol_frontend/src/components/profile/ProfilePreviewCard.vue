@@ -66,7 +66,7 @@ const buttonStyle = computed(() => {
 
 const contacts = computed(() => {
   const items: Array<{ label: string; value: string }> = []
-  if (props.phone) items.push({ label: 'Phone', value: props.phone })
+  if (props.phone) items.push({ label: 'Điện thoại', value: props.phone })
   if (props.zalo) items.push({ label: 'Zalo', value: props.zalo })
   if (props.messenger) items.push({ label: 'Messenger', value: props.messenger })
   return items
@@ -95,14 +95,14 @@ const contacts = computed(() => {
         </div>
 
         <div class="min-w-0 flex-1">
-          <p class="profile-preview__eyebrow">Public profile</p>
-          <h4 class="profile-preview__title">{{ displayName || 'Your display name' }}</h4>
+          <p class="profile-preview__eyebrow">Hồ sơ công khai</p>
+          <h4 class="profile-preview__title">{{ displayName || 'Tên hiển thị của bạn' }}</h4>
           <p class="profile-preview__handle">@{{ username || 'username' }}</p>
         </div>
       </div>
 
       <p class="profile-preview__bio">
-        {{ bio || 'Use the form to define your public bio, contact details, and branding.' }}
+        {{ bio || 'Dùng form để định nghĩa bio công khai, liên hệ và thương hiệu.' }}
       </p>
 
       <div v-if="contacts.length" class="profile-preview__contacts">
@@ -110,7 +110,7 @@ const contacts = computed(() => {
           v-for="contact in contacts"
           :key="contact.label"
           class="profile-preview__chip"
-          :class="{ 'profile-preview__chip--accent': contact.label === 'Phone' }"
+          :class="{ 'profile-preview__chip--accent': contact.label === 'Điện thoại' }"
         >
           <span class="profile-preview__chip-label">{{ contact.label }}</span>
           <span>{{ contact.value }}</span>
@@ -119,9 +119,9 @@ const contacts = computed(() => {
 
       <div class="profile-preview__actions">
         <button class="profile-preview__button" type="button" :style="buttonStyle">
-          Book collaboration
+          Đặt hợp tác
         </button>
-        <span class="profile-preview__ghost">Preview only</span>
+        <span class="profile-preview__ghost">Chỉ xem trước</span>
       </div>
     </div>
   </div>

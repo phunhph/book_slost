@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await loginLocal(email, password)
       if (response.user.role !== 'kol') {
         clearSession()
-        throw new Error('This workspace is only available for KOL accounts.')
+        throw new Error('Không gian làm việc này chỉ dành cho tài khoản KOL.')
       }
 
       setSession(response)
@@ -49,7 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const currentUser = await getCurrentUser()
       if (currentUser.role !== 'kol') {
-        throw new Error('This workspace is only available for KOL accounts.')
+        throw new Error('Không gian làm việc này chỉ dành cho tài khoản KOL.')
       }
       user.value = currentUser
     } catch {
@@ -68,7 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
     const currentUser = await getCurrentUser()
     if (currentUser.role !== 'kol') {
       clearSession()
-      throw new Error('Google login succeeded, but this account is not a KOL.')
+      throw new Error('Đăng nhập Google thành công, nhưng tài khoản này không phải KOL.')
     }
 
     user.value = currentUser

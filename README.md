@@ -25,8 +25,19 @@ Fullstack affiliate + booking platform voi 3 frontend Vue 3 tach role.
 | Role | Email | Mat khau | Username |
 |------|-------|----------|----------|
 | admin | `admin@example.com` | `Admin@123` | `admin-demo` |
-| kol | `creator@example.com` | `Creator@123` | `creator-demo` |
-| customer | `customer@example.com` | `Customer@123` | `customer-demo` |
+| kol (chinh) | `creator@example.com` | `Creator@123` | `creator-demo` |
+| customer (chinh) | `customer@example.com` | `Customer@123` | `customer-demo` |
+
+Sau migration `20260708_0005` co them data mau:
+
+- **8 KOL** them: `luna-fps`, `kai-moba`, `mira-stream`, `rex-pubg`, `nova-tft`, `ash-genshin`, `bolt-fc`, `ivy-roblox`
+  - Email dang `...@example.com`, mat khau chung: `Creator@123`
+  - Da co gia (tran/gio) + STK VietQR
+- **5 customer** them: `an-nguyen`, `bao-tran`, `chi-le`, `dung-pham`, `em-vo`
+  - Mat khau chung: `Customer@123`
+- **22 booking** da dang trang thai: `pending` / `confirmed` / `completed` / `cancelled`, co/khong guest, da/chua thanh toan
+
+Tong khoang: **1 admin + 9 KOL + 6 customer + 22+ booking**.
 
 ## Chay backend
 
@@ -135,5 +146,12 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## CI/CD
 
-- `.github/workflows/ci.yml`: pytest backend + build 3 frontend Vue
-- `.github/workflows/docker-build.yml`: build Docker images backend + admin + kol + client
+- `.github/workflows/ci.yml`: **unit test bat buoc** (`pytest` backend) + build 3 frontend Vue. Job gate: `CI success`.
+- `.github/workflows/docker-build.yml`: chi build/deploy image khi workflow CI ket thuc **success** (`workflow_run`). Khong pass unit test thi khong deploy.
+- Chay local:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+pytest -q
+```

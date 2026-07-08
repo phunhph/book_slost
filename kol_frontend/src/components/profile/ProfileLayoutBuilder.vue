@@ -21,13 +21,13 @@ const availableBlocks = computed(() => {
 })
 
 const blockLabels: Record<BlockType, string> = {
-  hero: 'Hero header',
-  social_links: 'Social links',
-  gallery: 'Gallery',
-  qr_codes: 'QR codes',
-  about: 'About',
-  booking: 'Booking form',
-  contact: 'Contact',
+  hero: 'Hero đầu trang',
+  social_links: 'Mạng xã hội',
+  gallery: 'Thư viện ảnh',
+  qr_codes: 'Mã QR',
+  about: 'Giới thiệu',
+  booking: 'Form đặt lịch',
+  contact: 'Liên hệ',
 }
 
 function commitBlocks(blocks: ProfileBlock[]) {
@@ -107,10 +107,10 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
               type="checkbox"
               @change="toggleBlock(block.id, ($event.target as HTMLInputElement).checked)"
             />
-            Visible
+            Hiện
           </label>
           <button class="btn-secondary px-3 py-2 text-xs" type="button" :disabled="index === 0" @click="moveBlock(block.id, -1)">
-            Up
+            Lên
           </button>
           <button
             class="btn-secondary px-3 py-2 text-xs"
@@ -118,7 +118,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
             :disabled="index === sortedBlocks.length - 1"
             @click="moveBlock(block.id, 1)"
           >
-            Down
+            Xuống
           </button>
           <button
             v-if="block.type !== 'hero' && block.type !== 'booking'"
@@ -126,17 +126,17 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
             type="button"
             @click="removeBlock(block.id)"
           >
-            Remove
+            Xóa
           </button>
         </div>
       </div>
 
       <div v-if="block.type === 'hero'" class="mt-4 text-sm text-slate-400">
-        Uses display name, username, avatar and bio from profile settings above.
+        Dùng tên hiển thị, username, avatar và bio từ phần cài đặt hồ sơ phía trên.
       </div>
 
       <div v-else-if="block.type === 'about'" class="mt-4">
-        <label class="mb-2 block text-sm text-slate-300">About content</label>
+        <label class="mb-2 block text-sm text-slate-300">Nội dung giới thiệu</label>
         <RichTextEditor
           :model-value="String(block.data.content ?? '')"
           placeholder="Giới thiệu chi tiết, thành tích, gói dịch vụ..."
@@ -146,7 +146,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
 
       <div v-else-if="block.type === 'contact'" class="mt-4 grid gap-3 sm:grid-cols-3">
         <div>
-          <label class="mb-2 block text-sm text-slate-300">Phone</label>
+          <label class="mb-2 block text-sm text-slate-300">Điện thoại</label>
           <input
             :value="String(block.data.phone ?? '')"
             class="field"
@@ -176,7 +176,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
 
       <div v-else-if="block.type === 'booking'" class="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
-          <label class="mb-2 block text-sm text-slate-300">Title</label>
+          <label class="mb-2 block text-sm text-slate-300">Tiêu đề</label>
           <input
             :value="String(block.data.title ?? '')"
             class="field"
@@ -185,7 +185,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
           />
         </div>
         <div>
-          <label class="mb-2 block text-sm text-slate-300">Subtitle</label>
+          <label class="mb-2 block text-sm text-slate-300">Phụ đề</label>
           <input
             :value="String(block.data.subtitle ?? '')"
             class="field"
@@ -203,7 +203,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
         >
           <div class="grid gap-3 md:grid-cols-2">
             <div class="min-w-0">
-              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Platform</label>
+              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Nền tảng</label>
               <select
                 :value="item.platform"
                 class="field min-w-0"
@@ -213,7 +213,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
               </select>
             </div>
             <div class="min-w-0">
-              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Label</label>
+              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Nhãn</label>
               <input
                 :value="item.label ?? ''"
                 class="field min-w-0"
@@ -248,19 +248,19 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
           type="button"
           @click="setSocialItems(block.id, [...socialItems(block), { platform: 'website', label: '', url: '' }])"
         >
-          + Thêm social link
+          + Thêm liên kết mạng xã hội
         </button>
       </div>
 
       <div v-else-if="block.type === 'gallery'" class="mt-4 space-y-4">
         <div>
-          <label class="mb-2 block text-sm text-slate-300">Layout</label>
+          <label class="mb-2 block text-sm text-slate-300">Bố cục</label>
           <select
             :value="String(block.data.layout ?? 'grid')"
             class="field max-w-xs"
             @change="updateBlock(block.id, (item) => ({ ...item, data: { ...item.data, layout: ($event.target as HTMLSelectElement).value } }))"
           >
-            <option value="grid">Grid</option>
+            <option value="grid">Lưới</option>
             <option value="carousel">Carousel</option>
           </select>
         </div>
@@ -270,7 +270,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
           class="block-editor-item"
         >
           <div class="min-w-0">
-            <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Image URL</label>
+            <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">URL ảnh</label>
             <input
               :value="item.url"
               class="field min-w-0"
@@ -281,7 +281,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
           </div>
           <div class="mt-3 grid gap-3 md:grid-cols-2">
             <div class="min-w-0">
-              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Alt text</label>
+              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Mô tả ảnh</label>
               <input
                 :value="item.alt ?? ''"
                 class="field min-w-0"
@@ -291,7 +291,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
               />
             </div>
             <div class="min-w-0">
-              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Caption</label>
+              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Chú thích</label>
               <input
                 :value="item.caption ?? ''"
                 class="field min-w-0"
@@ -316,7 +316,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
           type="button"
           @click="setGalleryItems(block.id, [...galleryItems(block), { url: '', alt: '', caption: '' }])"
         >
-          + Thêm ảnh gallery
+          + Thêm ảnh
         </button>
       </div>
 
@@ -328,7 +328,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
         >
           <div class="grid gap-3 md:grid-cols-2">
             <div class="min-w-0">
-              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Label</label>
+              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Nhãn</label>
               <input
                 :value="item.label"
                 class="field min-w-0"
@@ -338,7 +338,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
               />
             </div>
             <div class="min-w-0">
-              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">QR image URL</label>
+              <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">URL ảnh QR</label>
               <input
                 :value="item.image_url"
                 class="field min-w-0"
@@ -349,7 +349,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
             </div>
           </div>
           <div class="mt-3 min-w-0">
-            <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">Target URL (tuỳ chọn)</label>
+            <label class="mb-2 block text-xs font-medium uppercase tracking-wide text-slate-400">URL đích (tuỳ chọn)</label>
             <input
               :value="item.target_url ?? ''"
               class="field min-w-0"
@@ -379,7 +379,7 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
     </div>
 
     <div v-if="availableBlocks.length" class="rounded-2xl border border-dashed border-white/12 p-4">
-      <p class="text-sm font-medium text-white">Add block</p>
+      <p class="text-sm font-medium text-white">Thêm block</p>
       <div class="mt-3 flex flex-wrap gap-2">
         <button
           v-for="item in availableBlocks"
