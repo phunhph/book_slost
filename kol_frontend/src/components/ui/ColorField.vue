@@ -83,15 +83,7 @@ function applyCode() {
     </div>
 
     <div v-if="mode === 'palette' || compact" class="color-field__palette">
-      <div class="color-field__picker-row">
-        <label class="color-field__picker-shell">
-          <span class="color-field__swatch" :style="previewStyle" />
-          <input v-model="pickerValue" class="color-field__picker" type="color" />
-          <span class="text-sm text-slate-300">{{ compact ? hexForColorInput(modelValue) : 'Chọn màu' }}</span>
-        </label>
-        <code v-if="!compact" class="color-field__current">{{ hexForColorInput(modelValue) }}</code>
-      </div>
-
+      <!-- Suggested color presets grid on top -->
       <div class="color-field__preset-grid">
         <button
           v-for="color in COLOR_PRESETS"
@@ -103,6 +95,16 @@ function applyCode() {
           :title="color"
           @click="selectPreset(color)"
         />
+      </div>
+
+      <!-- Custom color picker at the bottom -->
+      <div class="color-field__picker-row">
+        <label class="color-field__picker-shell">
+          <span class="color-field__swatch" :style="previewStyle" />
+          <input v-model="pickerValue" class="color-field__picker" type="color" />
+          <span class="text-sm text-slate-300">{{ compact ? hexForColorInput(modelValue) : 'Tự chọn màu khác' }}</span>
+        </label>
+        <code v-if="!compact" class="color-field__current">{{ hexForColorInput(modelValue) }}</code>
       </div>
     </div>
 
@@ -212,13 +214,13 @@ function applyCode() {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.5rem;
-  margin-top: 0.85rem;
+  margin-bottom: 0.85rem;
 }
 
 .color-field--compact .color-field__preset-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.4rem;
-  margin-top: 0.65rem;
+  margin-bottom: 0.65rem;
 }
 
 .color-field__preset {

@@ -3,12 +3,10 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import ColorField from './ColorField.vue'
 import {
-  GRADIENT_PRESETS,
   buildLinearGradient,
   parseLinearGradient,
   suggestPrimaryForGradient,
   suggestTextColorForGradient,
-  type GradientPreset,
 } from '../../lib/colorUtils'
 
 const props = defineProps<{
@@ -82,16 +80,6 @@ function applyGradient() {
 function applyCode() {
   emit('update:modelValue', codeInput.value.trim())
 }
-
-function selectPreset(preset: GradientPreset) {
-  emit('update:modelValue', preset.value)
-  codeInput.value = preset.value
-  syncGradientFromValue(preset.value)
-  emitTheme({
-    textColor: preset.textColor,
-    primaryColor: preset.primaryColor,
-  })
-}
 </script>
 
 <template>
@@ -147,23 +135,7 @@ function selectPreset(preset: GradientPreset) {
           />
         </label>
 
-        <div class="mt-4">
-          <p class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">Gradient gợi ý (đổi cả nền + màu chữ)</p>
-          <div class="grid gap-2.5 sm:grid-cols-2">
-            <button
-              v-for="preset in GRADIENT_PRESETS"
-              :key="preset.value"
-              class="gradient-preset"
-              type="button"
-              @click="selectPreset(preset)"
-            >
-              <span class="gradient-preset__bar" :style="{ background: preset.value }">
-                <span class="gradient-preset__sample" :style="{ color: preset.textColor }">Aa</span>
-              </span>
-              <span class="gradient-preset__label">{{ preset.label }}</span>
-            </button>
-          </div>
-        </div>
+
       </div>
 
       <div v-else class="rounded-2xl border border-white/8 bg-white/3 p-4">

@@ -76,19 +76,19 @@ const hasQuickContact = computed(
         >
           <span 
             v-if="profile.price_per_match"
-            class="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 backdrop-blur-md"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-current/12 bg-current/5 px-3.5 py-1.5 text-xs font-semibold backdrop-blur-md text-current/80"
           >
             Theo trận:
-            <strong class="text-indigo-300 font-bold">
+            <strong class="font-bold text-current">
               {{ new Intl.NumberFormat('vi-VN').format(profile.price_per_match) }} {{ profile.currency || 'VND' }}
             </strong>
           </span>
           <span 
             v-if="profile.price_per_hour"
-            class="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 backdrop-blur-md"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-current/12 bg-current/5 px-3.5 py-1.5 text-xs font-semibold backdrop-blur-md text-current/80"
           >
             Theo giờ:
-            <strong class="text-indigo-300 font-bold">
+            <strong class="font-bold text-current">
               {{ new Intl.NumberFormat('vi-VN').format(profile.price_per_hour) }} {{ profile.currency || 'VND' }}
             </strong>
           </span>

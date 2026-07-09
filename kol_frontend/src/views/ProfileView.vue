@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { publicProfileUrl as buildPublicProfileUrl } from '../lib/appUrls'
 import { VN_BANKS, bankNameFromCode } from '../lib/banks'
-import { resolveThemeForBackground } from '../lib/colorUtils'
 import { defaultLayoutV2, migrateLayoutToV2, normalizeLayoutV2, parseLayout } from '../lib/profileBlocks'
 import { buildDemoLayoutV2, DEMO_AVATAR_URL, DEMO_PROFILE_COPY, DEMO_THEME } from '../lib/profileDemoContent'
 import { getProfileByUser, updateProfileByUser } from '../services/api'
@@ -120,6 +119,149 @@ const layoutModel = computed({
     form.layout_structure = normalizeLayoutV2(value)
   },
 })
+
+const themeEditSubMode = ref<'presets' | 'custom'>('presets')
+
+const themePresets = [
+  {
+    label: 'Pink Sky',
+    value: 'linear-gradient(135deg, #FDF2F8 0%, #E0F2FE 100%)',
+    textColor: '#0F172A',
+    primaryColor: '#DB2777',
+    vibe: 'Cute / Đáng yêu',
+    themeMode: 'light',
+  },
+  {
+    label: 'Strawberry Cream',
+    value: 'linear-gradient(135deg, #FFF0F6 0%, #FCC2D7 100%)',
+    textColor: '#4D052E',
+    primaryColor: '#D01257',
+    vibe: 'Cute / Đáng yêu',
+    themeMode: 'light',
+  },
+  {
+    label: 'Soft Yellow Cream',
+    value: 'linear-gradient(135deg, #FFF9DB 0%, #FFF3BF 100%)',
+    textColor: '#5C3E00',
+    primaryColor: '#D97706',
+    vibe: 'Cute / Đáng yêu',
+    themeMode: 'light',
+  },
+  {
+    label: 'Sweet Peach',
+    value: 'linear-gradient(135deg, #FFECE0 0%, #FFF5F0 100%)',
+    textColor: '#5B2100',
+    primaryColor: '#E04F1D',
+    vibe: 'Cute / Đáng yêu',
+    themeMode: 'light',
+  },
+  {
+    label: 'Deep Ocean Blue',
+    value: 'linear-gradient(135deg, #0B0F19 0%, #0F172A 100%)',
+    textColor: '#F8FAFC',
+    primaryColor: '#3B82F6',
+    vibe: 'Nam tính',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Polar Light',
+    value: 'linear-gradient(135deg, #020617 0%, #083344 100%)',
+    textColor: '#E0F2FE',
+    primaryColor: '#06B6D4',
+    vibe: 'Nam tính',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Stealth Grey',
+    value: 'linear-gradient(135deg, #09090B 0%, #18181B 50%, #27272A 100%)',
+    textColor: '#F4F4F5',
+    primaryColor: '#A1A1AA',
+    vibe: 'Nam tính',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Carbon Shadow',
+    value: 'linear-gradient(135deg, #030712 0%, #1F2937 100%)',
+    textColor: '#F9FAFB',
+    primaryColor: '#6366F1',
+    vibe: 'Nam tính',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Elegant Violet',
+    value: 'linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%)',
+    textColor: '#3B0764',
+    primaryColor: '#9333EA',
+    vibe: 'Nữ tính',
+    themeMode: 'light',
+  },
+  {
+    label: 'Lavender Dream',
+    value: 'linear-gradient(135deg, #F3E8FF 0%, #E8D5B5 100%)',
+    textColor: '#2E1065',
+    primaryColor: '#D946EF',
+    vibe: 'Nữ tính',
+    themeMode: 'light',
+  },
+  {
+    label: 'Cherry Blossom',
+    value: 'linear-gradient(135deg, #FFF5F7 0%, #FCE7F3 100%)',
+    textColor: '#500730',
+    primaryColor: '#EC4899',
+    vibe: 'Nữ tính',
+    themeMode: 'light',
+  },
+  {
+    label: 'Cosmic Orchid',
+    value: 'linear-gradient(135deg, #2E1065 0%, #4C1D95 100%)',
+    textColor: '#F5F3FF',
+    primaryColor: '#C084FC',
+    vibe: 'Nữ tính',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Cyberpunk Purple',
+    value: 'linear-gradient(135deg, #090514 0%, #1F104F 100%)',
+    textColor: '#F5F3FF',
+    primaryColor: '#39FF14',
+    vibe: 'Cyberpunk / Gaming',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Acid Lime Green',
+    value: 'linear-gradient(135deg, #180022 0%, #300044 100%)',
+    textColor: '#FDF4FF',
+    primaryColor: '#CCFF00',
+    vibe: 'Cyberpunk / Gaming',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Night City Neon',
+    value: 'linear-gradient(135deg, #03001e 0%, #7303c0 50%, #ec38bc 100%)',
+    textColor: '#FFFFFF',
+    primaryColor: '#00F0FF',
+    vibe: 'Cyberpunk / Gaming',
+    themeMode: 'dark',
+  },
+  {
+    label: 'Solar Explosion',
+    value: 'linear-gradient(135deg, #110404 0%, #3F0712 100%)',
+    textColor: '#FFF5F5',
+    primaryColor: '#FF3F00',
+    vibe: 'Cyberpunk / Gaming',
+    themeMode: 'dark',
+  },
+]
+
+function applyPreset(preset: typeof themePresets[0]) {
+  form.bg_type = 'gradient'
+  form.bg_value = preset.value
+  form.primary_color = preset.primaryColor
+  form.text_color = preset.textColor
+  form.theme_mode = preset.themeMode
+  toast.success(`Đã áp dụng vibe màu "${preset.label}"!`)
+}
+
 
 const previewProfile = computed((): UserProfile =>
   withResolvedProfileTheme({
@@ -275,10 +417,6 @@ function applyProfile(profile: UserProfile) {
 }
 
 function buildSavePayload(): ProfileUpdatePayload {
-  if (form.bg_type === 'gradient') {
-    syncThemeFromBackground()
-  }
-
   const payload: ProfileUpdatePayload = {
     layout_structure: normalizeLayoutV2(layoutModel.value),
     pricing_type: form.pricing_type ?? 'match',
@@ -324,21 +462,7 @@ function applyThemeFromBackground(theme: { textColor: string; primaryColor: stri
   form.primary_color = theme.primaryColor
 }
 
-function syncThemeFromBackground() {
-  const theme = resolveThemeForBackground(form.bg_type, form.bg_value)
-  if (!theme) return
-  form.text_color = theme.textColor
-  form.primary_color = theme.primaryColor
-}
 
-watch(
-  () => form.bg_value,
-  () => {
-    if (form.bg_type === 'gradient') {
-      syncThemeFromBackground()
-    }
-  },
-)
 
 function fillDemoContent() {
   form.bio = DEMO_PROFILE_COPY.bio
@@ -603,8 +727,67 @@ onMounted(loadProfile)
       </section>
 
       <section v-show="activeTab === 'theme'" class="glass-panel page-panel rounded-[2rem]">
-        <p class="profile-form-section__title">Giao diện & màu sắc</p>
-        <div class="mt-4 grid gap-5 lg:grid-cols-2 lg:items-start">
+        <!-- Inner Sub-Tab switcher -->
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-white/8 pb-4 mb-5">
+          <div>
+            <p class="profile-form-section__title !mb-1">Thiết kế Giao diện</p>
+            <p class="text-xs text-slate-400">Chọn theme phối sẵn hoặc tự do chỉnh sửa từng chi tiết.</p>
+          </div>
+          <div class="inline-flex gap-1 p-1 rounded-full border border-white/8 bg-black/30 shrink-0">
+            <button
+              type="button"
+              class="px-4 py-2 rounded-full text-xs font-semibold transition cursor-pointer"
+              :class="themeEditSubMode === 'presets' ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white' : 'text-slate-400 hover:text-white'"
+              @click="themeEditSubMode = 'presets'"
+            >
+              Gợi ý (Vibe màu phối sẵn)
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 rounded-full text-xs font-semibold transition cursor-pointer"
+              :class="themeEditSubMode === 'custom' ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white' : 'text-slate-400 hover:text-white'"
+              @click="themeEditSubMode = 'custom'"
+            >
+              Tùy chỉnh thủ công
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. GỢI Ý (Vibe màu phối sẵn) -->
+        <div v-show="themeEditSubMode === 'presets'" class="space-y-6">
+          <p class="text-sm text-slate-400">
+            Mỗi vibe màu dưới đây đã được tinh chỉnh độ tương phản hoàn hảo giữa màu nền, màu chữ và màu nhấn.
+          </p>
+
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <button
+              v-for="preset in themePresets"
+              :key="preset.label"
+              type="button"
+              class="group relative text-left rounded-2xl border border-white/8 p-4 bg-slate-900/40 hover:border-violet-500/50 hover:bg-slate-900/60 transition-all duration-300 flex flex-col justify-between h-32 cursor-pointer shadow-md"
+              @click="applyPreset(preset)"
+            >
+              <div>
+                <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-white/10 bg-white/5 text-slate-300 mb-2">
+                  {{ preset.vibe }}
+                </span>
+                <h4 class="text-sm font-bold text-white group-hover:text-violet-200 transition">{{ preset.label }}</h4>
+              </div>
+              
+              <!-- Mini Preview of Gradient and Text -->
+              <div class="w-full h-8 rounded-lg mt-2 overflow-hidden border border-white/10 flex items-center justify-between px-3" :style="{ background: preset.value }">
+                <span class="text-[9px] font-bold" :style="{ color: preset.textColor }">Mẫu chữ</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full border border-white/10" :style="{ background: preset.primaryColor }" />
+                  <span class="text-[8px] opacity-70" :style="{ color: preset.textColor }">Màu nhấn</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. TÙY CHỈNH THỦ CÔNG -->
+        <div v-show="themeEditSubMode === 'custom'" class="mt-4 grid gap-5 lg:grid-cols-2 lg:items-start">
           <ColorField
             :model-value="form.primary_color || '#FF007F'"
             label="Màu chính"

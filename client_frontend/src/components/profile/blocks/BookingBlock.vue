@@ -27,7 +27,7 @@ function closeModal() {
 <template>
   <section class="profile-section" id="booking-section">
     <!-- Call-to-Action Card -->
-    <div class="relative overflow-hidden rounded-3xl border border-white/12 bg-white/5 p-6 sm:p-8 text-center flex flex-col items-center">
+    <div class="relative overflow-hidden rounded-3xl border border-current/12 bg-current/5 p-6 sm:p-8 text-center flex flex-col items-center">
       <div 
         class="absolute -top-10 -left-10 w-40 h-40 rounded-full blur-[80px]"
         :style="{ backgroundColor: profile.primary_color + '20' }"
@@ -38,17 +38,17 @@ function closeModal() {
       />
 
       <p class="profile-section__label">Đặt lịch</p>
-      <h2 class="profile-section__title text-2xl font-bold mt-2 text-white">{{ title ?? 'Đặt lịch chơi cùng' }}</h2>
+      <h2 class="profile-section__title text-2xl font-bold mt-2">{{ title ?? 'Đặt lịch chơi cùng' }}</h2>
       <p v-if="subtitle" class="mt-2 text-sm opacity-80 max-w-md">{{ subtitle }}</p>
       
       <!-- Current Pricing Indicator -->
-      <div class="mt-6 flex flex-wrap justify-center gap-4 text-xs bg-black/30 border border-white/8 rounded-2xl px-5 py-3">
+      <div class="mt-6 flex flex-wrap justify-center gap-4 text-xs bg-current/8 border border-current/12 rounded-2xl px-5 py-3 text-current/80">
         <div>
-          Theo trận: <strong class="text-white">{{ new Intl.NumberFormat('vi-VN').format(profile.price_per_match || 0) }} {{ profile.currency || 'VND' }}</strong>
+          Theo trận: <strong class="font-bold text-current">{{ new Intl.NumberFormat('vi-VN').format(profile.price_per_match || 0) }} {{ profile.currency || 'VND' }}</strong>
         </div>
-        <div class="w-px h-4 bg-white/10 hidden sm:block"></div>
+        <div class="w-px h-4 bg-current/15 hidden sm:block"></div>
         <div>
-          Theo giờ: <strong class="text-white">{{ new Intl.NumberFormat('vi-VN').format(profile.price_per_hour || 0) }} {{ profile.currency || 'VND' }}</strong>
+          Theo giờ: <strong class="font-bold text-current">{{ new Intl.NumberFormat('vi-VN').format(profile.price_per_hour || 0) }} {{ profile.currency || 'VND' }}</strong>
         </div>
       </div>
 
@@ -56,9 +56,10 @@ function closeModal() {
       <button 
         type="button"
         @click="openModal"
-        class="mt-6 px-8 py-3.5 rounded-full font-bold text-slate-950 transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-lg"
+        class="mt-6 px-8 py-3.5 rounded-full font-bold transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-lg"
         :style="{ 
           background: profile.primary_color || '#8b5cf6', 
+          color: 'var(--profile-button-text)',
           boxShadow: `0 10px 30px ${profile.primary_color || '#8b5cf6'}40` 
         }"
       >

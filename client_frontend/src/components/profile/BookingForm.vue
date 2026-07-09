@@ -444,10 +444,10 @@ function copyToClipboard(text: string, label: string) {
       </div>
 
       <button
-        class="sm:col-span-2 rounded-2xl px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+        class="sm:col-span-2 rounded-2xl px-5 py-3 text-sm font-semibold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         type="submit"
         :disabled="state.isSubmitting || !hasBankAccount"
-        :style="{ background: kolProfile.primary_color }"
+        :style="{ background: kolProfile.primary_color, color: 'var(--profile-button-text)' }"
       >
         {{ state.isSubmitting ? 'Đang gửi yêu cầu...' : 'Gửi đặt lịch & nhận mã QR' }}
       </button>
