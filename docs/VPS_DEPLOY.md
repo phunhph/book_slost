@@ -198,34 +198,16 @@ chmod -R 755 uploads
 ## Bước 6. Systemd cho API (chạy nền) — **VPS (SSH)**
 
 ```bash
-sudo nano /etc/systemd/system/book-slost-api.service
-```
-
-```ini
-[Unit]
-Description=book_slost FastAPI
-After=network.target postgresql.service
-
-[Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/var/www/xuong/book_slost/backend
-Environment=PATH=/var/www/xuong/book_slost/backend/.venv/bin
-ExecStart=/var/www/xuong/book_slost/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo chown -R www-data:www-data /var/www/xuong/book_slost/backend/uploads
+sudo cp /var/www/xuong/book_slost/scripts/book-slost-api.service /etc/systemd/system/book-slost-api.service
+# Nếu APP_PATH khác, sửa đường dẫn trong file service trước khi copy
 sudo systemctl daemon-reload
+sudo chown -R www-data:www-data /var/www/xuong/book_slost/backend/uploads
 sudo systemctl enable book-slost-api
 sudo systemctl start book-slost-api
 sudo systemctl status book-slost-api
 ```
+
+Hoặc tạo tay — `/etc/systemd/system/book-slost-api.service`:
 
 Kiểm tra API:
 
@@ -642,7 +624,8 @@ Và callback frontend (theo từng app):
 | Frontend báo "Failed to fetch" | Kiểm tra `VITE_API_URL` dùng `https://`; DNS `api` OK; CORS trong `backend/.env` |
 | `DNS_PROBE_FINISHED_NXDOMAIN` | Chưa khai báo DNS — làm **Bước 2**, đợi propagate |
 | HTTPS không có / cert lỗi | Chạy **Bước 9** Certbot sau khi HTTP OK |
-| 502 Bad Gateway API | `sudo systemctl status book-slost-api`; xem log `journalctl -u book-slost-api -f` |
+| `curl` 127.0.0.1:8000 fail sau deploy | Service `book-slost-api` chưa tạo hoặc crash | `sudo systemctl status book-slost-api`; `journalctl -u book-slost-api -n 50` |
+| API exit ngay sau restart | Sai `.env` DB / thiếu `.venv` | Kiểm tra `backend/.env`; chạy Bước 5–6 thủ công một lần |
 | Vue route F5 bị 404 | Nginx cần `try_files ... /index.html` |
 | Upload bill lỗi | `client_max_body_size 10M`; quyền `backend/uploads` cho `www-data` |
 | OAuth Google lỗi | Sai `GOOGLE_REDIRECT_URI` hoặc chưa khai báo URL trên Google Console |
