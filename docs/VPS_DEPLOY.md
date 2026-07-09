@@ -7,17 +7,29 @@ Hướng dẫn **2 giai đoạn**:
 
 ---
 
+## Danh sách domain (4 subdomain — bắt buộc)
+
+Tất cả trỏ **A record** về cùng **IP VPS**:
+
+| # | Subdomain | URL đầy đủ | Vai trò |
+|---|-----------|------------|---------|
+| 1 | `admin` | `https://admin.decodeareer.id.vn` | Màn Admin |
+| 2 | `client` | `https://client.decodeareer.id.vn` | Màn khách hàng |
+| 3 | `kol` | `https://kol.decodeareer.id.vn` | Màn KOL |
+| 4 | `api` | `https://api.decodeareer.id.vn` | Backend API (FastAPI) |
+
+> **Quan trọng:** `api` không phải tùy chọn — 3 màn frontend đều gọi API qua domain này.
+
+---
+
 ## Tổng quan kiến trúc
 
-| Domain | App | Thư mục trên VPS |
-|--------|-----|------------------|
+| Domain | App | Thư mục / dịch vụ trên VPS |
+|--------|-----|----------------------------|
 | `https://admin.decodeareer.id.vn` | Admin backoffice | `/var/www/xuong/book_slost/admin_frontend/dist` |
 | `https://client.decodeareer.id.vn` | Client (khách) | `/var/www/xuong/book_slost/client_frontend/dist` |
 | `https://kol.decodeareer.id.vn` | KOL workspace | `/var/www/xuong/book_slost/kol_frontend/dist` |
-| `https://api.decodeareer.id.vn` | FastAPI backend | `uvicorn` port `8000` (reverse proxy Nginx) |
-
-> **Lưu ý:** Cần thêm DNS **A record** cho `api.decodeareer.id.vn` trỏ cùng IP VPS.  
-> 3 domain bạn đưa là cho 3 màn hình; API chạy subdomain `api` (hoặc tên khác, miễn HTTPS + CORS đúng).
+| `https://api.decodeareer.id.vn` | FastAPI backend | `uvicorn` `127.0.0.1:8000` (Nginx reverse proxy) |
 
 Thư mục gốc trên VPS (theo ảnh bạn gửi):
 
@@ -39,7 +51,7 @@ Nếu trên server còn folder `fromt_be` / `fromt_fe` (lỗi đánh máy cũ), 
 - Ubuntu 22.04 / 24.04 (khuyến nghị)
 - RAM tối thiểu **2 GB** (4 GB ổn hơn khi build frontend)
 - Mở port: **22**, **80**, **443**
-- DNS A record trỏ về IP VPS:
+- DNS: tạo **4 A record** (xem bảng ở đầu doc):
   - `admin.decodeareer.id.vn`
   - `client.decodeareer.id.vn`
   - `kol.decodeareer.id.vn`
@@ -68,7 +80,40 @@ node -v
 npm -v
 ```
 
-## Bước 2. Clone / cập nhật code
+## Bước 2. Khai báo DNS (bắt buộc — làm trước HTTPS)
+
+Vào panel quản lý domain `decodeareer.id.vn` (Cloudflare, Namecheap, nhà cung cấp domain…), tạo **4 bản ghi A**:
+
+| Host / Name | Type | Value | TTL |
+|-------------|------|-------|-----|
+| `admin` | A | `<IP_VPS>` | Auto / 300 |
+| `client` | A | `<IP_VPS>` | Auto / 300 |
+| `kol` | A | `<IP_VPS>` | Auto / 300 |
+| `api` | A | `<IP_VPS>` | Auto / 300 |
+
+> **Không bỏ quên `api`** — thiếu record này sẽ lỗi `DNS_PROBE_FINISHED_NXDOMAIN` khi mở `api.decodeareer.id.vn`.
+
+Kiểm tra DNS đã trỏ đúng (chạy trên máy local hoặc VPS):
+
+```bash
+nslookup admin.decodeareer.id.vn
+nslookup client.decodeareer.id.vn
+nslookup kol.decodeareer.id.vn
+nslookup api.decodeareer.id.vn
+```
+
+Tất cả phải trả về **cùng IP VPS**. Đợi 5–30 phút (đôi khi vài giờ) nếu vừa mới thêm record.
+
+Mở firewall trên VPS (nếu dùng `ufw`):
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'   # mở port 80 + 443
+sudo ufw enable
+sudo ufw status
+```
+
+## Bước 3. Clone / cập nhật code
 
 ```bash
 sudo mkdir -p /var/www/xuong
@@ -81,7 +126,7 @@ cd /var/www/xuong/book_slost
 git pull origin main
 ```
 
-## Bước 3. PostgreSQL
+## Bước 4. PostgreSQL
 
 ```bash
 sudo -u postgres psql
@@ -95,7 +140,7 @@ CREATE DATABASE affiliate_booking_core OWNER book_slost;
 \q
 ```
 
-## Bước 4. Cấu hình backend `.env`
+## Bước 5. Cấu hình backend `.env`
 
 ```bash
 cd /var/www/xuong/book_slost/backend
@@ -139,7 +184,7 @@ mkdir -p uploads/payment_proofs
 chmod -R 755 uploads
 ```
 
-## Bước 5. Systemd cho API (chạy nền)
+## Bước 6. Systemd cho API (chạy nền)
 
 ```bash
 sudo nano /etc/systemd/system/book-slost-api.service
@@ -178,11 +223,22 @@ curl http://127.0.0.1:8000/health
 # Kỳ vọng: {"status":"ok"}
 ```
 
-## Bước 6. Build 3 frontend (production)
+## Bước 7. Env & build 3 frontend (production)
 
-Mỗi app cần file `.env.production` (hoặc export biến khi build):
+Vite đọc biến lúc **build** (`npm run build`), không đọc lúc runtime trên Nginx.  
+Tạo file **`.env.production`** trong từng folder frontend **trên VPS** (không commit lên Git).
 
-### Admin
+### Bảng biến môi trường
+
+| Biến | Admin | Client | KOL | Mô tả |
+|------|:-----:|:------:|:---:|-------|
+| `VITE_API_URL` | ✅ | ✅ | ✅ | URL API có `/api` — gọi REST |
+| `VITE_API_BASE_URL` | ✅ | ✅ | ✅ | URL gốc API — OAuth redirect |
+| `VITE_CLIENT_APP_URL` | — | ✅ | ✅ | Link sang màn client |
+| `VITE_KOL_APP_URL` | — | ✅ | — | Link sang màn KOL (redirect sau login) |
+| `VITE_ADMIN_APP_URL` | — | ✅ | — | Link sang màn admin (redirect sau login) |
+
+### Admin — `admin_frontend/.env.production`
 
 ```bash
 cd /var/www/xuong/book_slost/admin_frontend
@@ -194,33 +250,49 @@ npm ci
 npm run build
 ```
 
-### Client
+### Client — `client_frontend/.env.production`
 
 ```bash
 cd /var/www/xuong/book_slost/client_frontend
 cat > .env.production << 'EOF'
 VITE_API_URL=https://api.decodeareer.id.vn/api
 VITE_API_BASE_URL=https://api.decodeareer.id.vn
+VITE_CLIENT_APP_URL=https://client.decodeareer.id.vn
+VITE_KOL_APP_URL=https://kol.decodeareer.id.vn
+VITE_ADMIN_APP_URL=https://admin.decodeareer.id.vn
 EOF
 npm ci
 npm run build
 ```
 
-### KOL
+### KOL — `kol_frontend/.env.production`
 
 ```bash
 cd /var/www/xuong/book_slost/kol_frontend
 cat > .env.production << 'EOF'
 VITE_API_URL=https://api.decodeareer.id.vn/api
 VITE_API_BASE_URL=https://api.decodeareer.id.vn
+VITE_CLIENT_APP_URL=https://client.decodeareer.id.vn
 EOF
 npm ci
 npm run build
 ```
 
+> **Lưu ý:** Sau khi tạo `.env.production` trên VPS, mỗi lần `scripts/deploy.sh` chạy sẽ `npm run build` lại — file env **phải giữ trên server**, không bị ghi đè bởi `git pull`.
+
+### Dev local (tham khảo)
+
+| App | File | Port |
+|-----|------|------|
+| Admin | `admin_frontend/.env` | 3000 |
+| Client | `client_frontend/.env` | 3001 |
+| KOL | `kol_frontend/.env` | 3002 |
+
+Copy từ `.env.example` tương ứng, dùng `http://localhost:8000` cho API.
+
 Sau build, mỗi app có thư mục `dist/` — Nginx sẽ trỏ vào đó.
 
-## Bước 7. Nginx — 4 site (3 FE + 1 API)
+## Bước 8. Nginx — HTTP (port 80, chuẩn bị cho HTTPS)
 
 ### API — `/etc/nginx/sites-available/api.decodeareer.id.vn`
 
@@ -313,23 +385,70 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## Bước 8. SSL (Let's Encrypt)
+Kiểm tra HTTP (chưa HTTPS) — **phải OK trước khi chạy Certbot**:
+
+```bash
+curl -I http://api.decodeareer.id.vn/health
+curl -I http://admin.decodeareer.id.vn
+```
+
+Nếu `curl` báo không resolve host → quay lại **Bước 2 DNS**.  
+Nếu `502` → kiểm tra `book-slost-api` (Bước 6).
+
+## Bước 9. Khai báo HTTPS (Let's Encrypt + Certbot)
+
+Sau khi **4 domain resolve DNS** và **Nginx HTTP chạy OK**, cấp chứng chỉ SSL miễn phí:
 
 ```bash
 sudo certbot --nginx \
   -d api.decodeareer.id.vn \
   -d admin.decodeareer.id.vn \
   -d client.decodeareer.id.vn \
-  -d kol.decodeareer.id.vn
+  -d kol.decodeareer.id.vn \
+  --email your-email@example.com \
+  --agree-tos \
+  --no-eff-email
 ```
 
-Certbot tự chỉnh Nginx sang HTTPS. Gia hạn tự động:
+Khi Certbot hỏi **redirect HTTP → HTTPS**, chọn **`2` (Redirect)** — khuyến nghị bắt buộc cho production.
+
+Certbot sẽ tự:
+- Tạo file SSL trong `/etc/letsencrypt/live/...`
+- Sửa config Nginx: thêm `listen 443 ssl`, certificate, redirect `80 → 443`
+
+Kiểm tra HTTPS:
+
+```bash
+curl -I https://api.decodeareer.id.vn/health
+curl https://api.decodeareer.id.vn/health
+```
+
+Kỳ vọng: HTTP `200` và body `{"status":"ok"}`.
+
+Mở trình duyệt (phải dùng **`https://`**, không phải `http://`):
+
+- `https://api.decodeareer.id.vn/health`
+- `https://admin.decodeareer.id.vn`
+- `https://client.decodeareer.id.vn`
+- `https://kol.decodeareer.id.vn`
+
+Gia hạn SSL tự động (Let's Encrypt 90 ngày):
 
 ```bash
 sudo certbot renew --dry-run
 ```
 
-## Bước 9. Kiểm tra sau deploy tay
+### Lỗi HTTPS thường gặp
+
+| Lỗi | Nguyên nhân | Cách xử lý |
+|-----|-------------|------------|
+| `DNS_PROBE_FINISHED_NXDOMAIN` | Chưa có DNS `api` (hoặc domain khác) | Thêm A record ở **Bước 2** |
+| Certbot `Connection refused` | Port 80 chưa mở / Nginx chưa chạy | `sudo ufw allow 'Nginx Full'`; `sudo systemctl status nginx` |
+| Certbot `404` validation | `server_name` Nginx sai domain | Sửa lại config Bước 8, `nginx -t`, reload |
+| `NET::ERR_CERT_COMMON_NAME_INVALID` | Truy cập IP thay vì domain | Dùng đúng URL `https://api.decodeareer.id.vn` |
+| Frontend gọi API lỗi mixed content | Build FE với `http://` API | `.env.production` phải dùng `https://api...` (Bước 7) |
+
+## Bước 10. Kiểm tra sau deploy tay
 
 | URL | Kỳ vọng |
 |-----|---------|
@@ -508,12 +627,16 @@ Và callback frontend (theo từng app):
 
 ### Lần đầu (tay)
 
-- [ ] DNS 4 subdomain → IP VPS
-- [ ] PostgreSQL + `.env` backend
+- [ ] **Bước 2:** DNS 4 subdomain (`admin`, `client`, `kol`, `api`) → IP VPS
+- [ ] `nslookup` 4 domain OK
+- [ ] PostgreSQL + `backend/.env` (URL `https://`)
 - [ ] `alembic upgrade head`
 - [ ] systemd `book-slost-api` chạy OK
-- [ ] Build 3 frontend + `.env.production`
-- [ ] Nginx 4 site + `certbot`
+- [ ] `.env.production` 3 frontend (`https://api...`)
+- [ ] Build 3 frontend
+- [ ] Nginx HTTP (Bước 8) — `curl http://...` OK
+- [ ] **Bước 9:** Certbot HTTPS + redirect 80→443
+- [ ] `curl https://api.decodeareer.id.vn/health` OK
 - [ ] Login + đặt lịch + upload bill thử
 
 ### CI/CD
@@ -529,7 +652,9 @@ Và callback frontend (theo từng app):
 
 | Triệu chứng | Cách xử lý |
 |-------------|------------|
-| Frontend báo "Failed to fetch" | Kiểm tra `VITE_API_URL` lúc build; API HTTPS; CORS trong `.env` |
+| Frontend báo "Failed to fetch" | Kiểm tra `VITE_API_URL` dùng `https://`; DNS `api` OK; CORS trong `backend/.env` |
+| `DNS_PROBE_FINISHED_NXDOMAIN` | Chưa khai báo DNS — làm **Bước 2**, đợi propagate |
+| HTTPS không có / cert lỗi | Chạy **Bước 9** Certbot sau khi HTTP OK |
 | 502 Bad Gateway API | `sudo systemctl status book-slost-api`; xem log `journalctl -u book-slost-api -f` |
 | Vue route F5 bị 404 | Nginx cần `try_files ... /index.html` |
 | Upload bill lỗi | `client_max_body_size 10M`; quyền `backend/uploads` cho `www-data` |
