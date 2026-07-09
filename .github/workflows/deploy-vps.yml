@@ -41,4 +41,5 @@ jobs:
             export APP_ROOT="${{ env.VPS_APP_PATH }}"
             cd "$APP_ROOT"
             echo "Manual deploy — sync origin/main"
-            ./scripts/deploy.sh
+            chmod +x scripts/deploy.sh 2>/dev/null || true
+            bash scripts/deploy.sh

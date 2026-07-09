@@ -163,4 +163,5 @@ jobs:
             echo "Deploy commit: ${{ github.sha }}"
             echo "Branch: ${{ github.ref_name }}"
             echo "App path: $APP_ROOT"
-            ./scripts/deploy.sh
+            chmod +x scripts/deploy.sh 2>/dev/null || true
+            bash scripts/deploy.sh
