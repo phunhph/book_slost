@@ -468,7 +468,7 @@ sudo certbot renew --dry-run
 | Bước | Việc | Làm ở đâu |
 |------|------|-----------|
 | 1 | `git pull` OK trên VPS | **VPS** (SSH) |
-| 2 | `chmod +x deploy.sh` | **VPS** (SSH) |
+| 2 | `bash scripts/deploy.sh` OK | **VPS** (SSH) |
 | 3 | Tạo SSH key deploy | **Máy local** → public key gắn **VPS**, private key → **GitHub** |
 | 4 | Secrets `VPS_HOST`, `VPS_USER`… | **GitHub** (web) |
 | 5 | Merge MR, xem Actions | **GitHub** (web) |
@@ -509,7 +509,7 @@ Nếu repo private, thêm **Deploy key** (GitHub → Settings → Deploy keys) h
 
 ## Bước 2. Script deploy trên VPS — **VPS (SSH)**
 
-Repo có `scripts/deploy.sh`. Trên VPS:
+Repo có `scripts/deploy.sh`. CI gọi `bash scripts/deploy.sh` — **không bắt buộc** `chmod +x` (nhưng có thể chạy một lần nếu muốn):
 
 ```bash
 chmod +x /var/www/xuong/book_slost/scripts/deploy.sh
@@ -609,7 +609,7 @@ Và callback frontend (theo từng app):
 ### CI/CD
 
 - [ ] VPS `git pull origin main` OK (deploy key nếu repo private)
-- [ ] `chmod +x scripts/deploy.sh`
+- [ ] `bash scripts/deploy.sh` chạy OK trên VPS (tùy chọn: `chmod +x`)
 - [ ] `.env` (FE) + `backend/.env` trên VPS
 - [ ] GitHub Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_APP_PATH`
 - [ ] `sudo visudo` cho restart service

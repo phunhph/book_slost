@@ -4,6 +4,8 @@ set -euo pipefail
 APP_ROOT="${APP_ROOT:-/var/www/xuong/book_slost}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 SERVICE_NAME="${SERVICE_NAME:-book-slost-api}"
+# User chạy uvicorn (mặc định www-data; set BOOK_SLOST_SERVICE_USER=root nếu deploy bằng root)
+SERVICE_USER="${BOOK_SLOST_SERVICE_USER:-www-data}"
 cd "$APP_ROOT"
 
 require_file() {
@@ -46,11 +48,8 @@ require_frontend_env "${APP_ROOT}/kol_frontend" "kol"
 require_file "${APP_ROOT}/backend/.env"
 
 if ! systemctl list-unit-files "${SERVICE_NAME}.service" &>/dev/null; then
-  echo "ERROR: Chưa có systemd service ${SERVICE_NAME}."
-  echo "Chạy trên VPS (một lần):"
-  echo "  sudo cp ${APP_ROOT}/scripts/book-slost-api.service /etc/systemd/system/"
-  echo "  sudo systemctl daemon-reload && sudo systemctl enable --now ${SERVICE_NAME}"
-  exit 1
+  echo "==> Install systemd service (lần đầu)"
+  sudo bash "${APP_ROOT}/scripts/install-api-service.sh" "${APP_ROOT}" "${SERVICE_USER}"
 fi
 
 echo "==> Backend: deps + migrate"
@@ -64,9 +63,14 @@ alembic upgrade head
 deactivate
 mkdir -p uploads/payment_proofs
 
-echo "==> Backend permissions (service chạy user www-data)"
-sudo chown -R www-data:www-data "${APP_ROOT}/backend/.venv" "${APP_ROOT}/backend/uploads"
-sudo chmod -R u+rX "${APP_ROOT}/backend/app"
+echo "==> Backend permissions (service user: ${SERVICE_USER})"
+sudo chown -R "${SERVICE_USER}:${SERVICE_USER}" "${APP_ROOT}/backend"
+sudo chmod 640 "${APP_ROOT}/backend/.env" 2>/dev/null || true
+
+echo "==> Verify app import"
+sudo -u "${SERVICE_USER}" env PATH="${APP_ROOT}/backend/.venv/bin:$PATH" \
+  bash -c "cd '${APP_ROOT}/backend' && python -c 'from app.main import app'" \
+  || { echo "ERROR: không import được app — chạy: bash scripts/diagnose-api.sh"; exit 1; }
 
 echo "==> Build admin"
 cd "${APP_ROOT}/admin_frontend"
