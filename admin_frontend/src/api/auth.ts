@@ -1,5 +1,6 @@
 import { apiRequest } from "./client";
 import type { AuthResponse, BookingRow, CustomerRow, DashboardStats, KolRow } from "@/types";
+import { API_BASE_URL } from "./client";
 
 export function loginLocal(email: string, password: string) {
   return apiRequest<AuthResponse>("/auth/login-local", {
@@ -29,6 +30,5 @@ export function fetchBookings(token: string) {
 }
 
 export function getGoogleOAuthUrl() {
-  const base = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
-  return `${base}/auth/google?app=admin`;
+  return `${API_BASE_URL}/auth/google?app=admin`;
 }

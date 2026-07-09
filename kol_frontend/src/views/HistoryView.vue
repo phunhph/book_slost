@@ -85,21 +85,21 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="glass-panel page-panel rounded-[2rem]">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+  <div class="glass-panel page-panel workspace-shell-card">
+    <div class="workspace-toolbar">
       <div>
-        <p class="text-sm uppercase tracking-[0.3em] text-fuchsia-300/80">Lịch sử</p>
-        <h3 class="mt-2 text-2xl font-semibold text-white">Công việc đã hoàn thành và đã hủy</h3>
+        <p class="workspace-eyebrow">Lịch sử</p>
+        <h3 class="workspace-title">Nhìn lại các booking đã hoàn tất hoặc đã hủy</h3>
       </div>
       <input
         v-model="query"
         type="search"
         placeholder="Tìm khách, mã QR, ghi chú..."
-        class="h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-slate-500 focus:border-fuchsia-400/40 lg:max-w-xs"
+        class="workspace-search"
       />
     </div>
 
-    <div class="mt-5 flex flex-wrap gap-2">
+    <div class="workspace-chip-group mt-5">
       <button
         v-for="item in [
           { id: 'all', label: 'Tất cả', count: filterCounts.all },
@@ -108,12 +108,8 @@ onMounted(async () => {
         ]"
         :key="item.id"
         type="button"
-        class="rounded-full border px-3 py-1.5 text-xs font-semibold transition"
-        :class="
-          statusFilter === item.id
-            ? 'border-fuchsia-300 bg-fuchsia-500/20 text-fuchsia-100'
-            : 'border-white/10 bg-white/5 text-slate-300'
-        "
+        class="workspace-chip"
+        :class="{ 'workspace-chip--active': statusFilter === item.id }"
         @click="statusFilter = item.id as 'all' | 'completed' | 'cancelled'"
       >
         {{ item.label }} ({{ item.count }})
@@ -122,16 +118,16 @@ onMounted(async () => {
 
     <div v-if="loading" class="mt-6 text-sm text-slate-400">Đang tải lịch sử...</div>
 
-    <div v-else-if="!filteredBookings.length" class="mt-6 rounded-3xl border border-dashed border-white/10 p-6 text-sm text-slate-400">
+    <div v-else-if="!filteredBookings.length" class="workspace-empty mt-6">
       Không có booking phù hợp bộ lọc.
     </div>
 
     <template v-else>
-      <div class="mt-6 space-y-4">
+      <div class="workspace-list mt-6">
         <article
           v-for="booking in pagedBookings"
           :key="booking.id"
-          class="cursor-pointer rounded-[1.75rem] border border-white/8 bg-white/4 p-5 transition hover:border-fuchsia-300/30 hover:bg-fuchsia-500/5"
+          class="workspace-list-item cursor-pointer"
           @click="openDetail(booking)"
         >
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -140,7 +136,7 @@ onMounted(async () => {
                 <p class="truncate text-lg font-semibold text-white">
                   {{ booking.guest_name || booking.customer_email || 'Khách đặt lịch' }}
                 </p>
-                <span class="text-[11px] text-slate-500">Xem chi tiết →</span>
+                <span class="workspace-meta">Xem chi tiết →</span>
               </div>
               <p class="mt-1 text-sm text-slate-400">{{ formatDateTime(booking.scheduled_at) }}</p>
               <p class="mt-2 text-sm text-violet-200">
@@ -171,9 +167,7 @@ onMounted(async () => {
         </article>
       </div>
 
-      <div
-        class="mt-5 flex flex-col gap-3 rounded-[1.25rem] border border-white/8 bg-white/4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-      >
+      <div class="workspace-footer-bar mt-5">
         <p class="text-sm text-slate-400">
           Hiển thị
           <span class="font-semibold text-white">{{ rangeStart }}–{{ rangeEnd }}</span>

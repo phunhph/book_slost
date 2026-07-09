@@ -11,13 +11,30 @@ import {
 import RichTextEditor from '@/components/ui/RichTextEditor.vue'
 import type { BlockType, GalleryItem, ProfileBlock, ProfileLayoutV2, QrCodeItem, SocialLinkItem } from '@/types/profile'
 
+const props = withDefaults(
+  defineProps<{
+    mode?: 'all' | 'content'
+  }>(),
+  { mode: 'all' },
+)
+
 const layout = defineModel<ProfileLayoutV2>({ required: true })
 
-const sortedBlocks = computed(() => migrateLayoutToV2(layout.value).blocks)
+const sortedBlocks = computed(() => {
+  const blocks = migrateLayoutToV2(layout.value).blocks
+  if (props.mode === 'content') {
+    return blocks.filter((block) => ['about', 'gallery', 'qr_codes', 'booking'].includes(block.type))
+  }
+  return blocks
+})
 
 const availableBlocks = computed(() => {
   const existing = new Set(sortedBlocks.value.map((block) => block.type))
-  return BLOCK_LIBRARY.filter((item) => !existing.has(item.type))
+  const library =
+    props.mode === 'content'
+      ? BLOCK_LIBRARY.filter((item) => ['about', 'gallery', 'qr_codes'].includes(item.type))
+      : BLOCK_LIBRARY
+  return library.filter((item) => !existing.has(item.type))
 })
 
 const blockLabels: Record<BlockType, string> = {
@@ -89,6 +106,9 @@ function setQrItems(blockId: string, items: QrCodeItem[]) {
 
 <template>
   <div class="space-y-4">
+    <p v-if="mode === 'content'" class="rounded-xl border border-white/8 bg-white/3 px-4 py-3 text-sm text-slate-400">
+      Hero, kết nối và liên hệ được quản lý ở tab <strong class="text-slate-200">Kết nối</strong>. Ở đây chỉ chỉnh nội dung chi tiết và form đặt lịch.
+    </p>
     <div
       v-for="(block, index) in sortedBlocks"
       :key="block.id"

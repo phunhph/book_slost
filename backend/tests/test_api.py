@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -163,6 +163,56 @@ def test_kol_can_update_own_booking_status(
     )
     assert updated.status_code == 200
     assert updated.json()["status"] == "confirmed"
+
+
+def test_kol_can_create_manual_booking_and_update_progress(
+    client: TestClient,
+    seed_users: dict[str, User],
+    future_schedule: datetime,
+) -> None:
+    kol_headers = _auth_header(client, seed_users["kol"].email, "Creator@123")
+    created = client.post(
+        "/api/kol/bookings",
+        headers=kol_headers,
+        json={
+            "scheduled_at": future_schedule.isoformat(),
+            "pricing_type": "match",
+            "quantity": 2,
+            "guest_name": "Booking Tay",
+            "guest_phone": "0909444555",
+            "source": "external",
+            "notes": "Khách chốt qua inbox",
+        },
+    )
+    assert created.status_code == 201, created.text
+    payload = created.json()
+    assert payload["source"] == "external"
+    assert payload["customer_user_id"] is None
+    assert payload["progress_percent"] == 0
+
+    updated = client.patch(
+        f"/api/kol/bookings/{payload['id']}/progress",
+        headers=kol_headers,
+        json={
+            "progress_percent": 65,
+            "progress_note": "Đã quay xong phần đầu",
+            "extended_until": (future_schedule + timedelta(days=1)).isoformat(),
+            "extension_note": "Brand xin dời deadline",
+        },
+    )
+    assert updated.status_code == 200, updated.text
+    updated_payload = updated.json()
+    assert updated_payload["progress_percent"] == 65
+    assert updated_payload["extension_count"] == 1
+    assert updated_payload["extension_note"] == "Brand xin dời deadline"
+
+    logs = client.get(f"/api/kol/bookings/{payload['id']}/logs", headers=kol_headers)
+    assert logs.status_code == 200, logs.text
+    rows = logs.json()
+    assert len(rows) >= 2
+    actions = [item["action"] for item in rows]
+    assert "progress_updated" in actions
+    assert "manual_booking_created" in actions
 
 
 def test_customer_can_list_own_bookings(

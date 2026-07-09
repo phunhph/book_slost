@@ -1,8 +1,11 @@
 import axios from 'axios'
 import type {
   AuthResponse,
+  BookingActivityLog,
   Booking,
+  BookingProgressPayload,
   DashboardStats,
+  KolManualBookingPayload,
   ProfileUpdatePayload,
   User,
   UserProfile,
@@ -10,8 +13,37 @@ import type {
 
 export const TOKEN_KEY = 'abc_kol_access_token'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+function inferApiBaseUrl() {
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (configured) return configured
+
+  if (typeof window === 'undefined') return 'http://localhost:8000'
+
+  const { protocol, hostname } = window.location
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8000'
+  }
+
+  const parts = hostname.split('.')
+  if (parts.length >= 3 && ['admin', 'client', 'kol'].includes(parts[0])) {
+    return `${protocol}//api.${parts.slice(1).join('.')}`
+  }
+
+  if (hostname.startsWith('api.')) {
+    return `${protocol}//${hostname}`
+  }
+
+  return `${protocol}//${hostname}`
+}
+
+function inferApiUrl() {
+  const configured = import.meta.env.VITE_API_URL?.trim()
+  if (configured) return configured
+  return `${inferApiBaseUrl().replace(/\/$/, '')}/api`
+}
+
+const API_BASE_URL = inferApiBaseUrl()
+const API_URL = inferApiUrl()
 
 export const googleOAuthUrl = `${API_BASE_URL}/auth/google?app=kol`
 
@@ -37,8 +69,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (!error.response) {
-      error.message =
-        'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và đảm bảo backend đang chạy tại http://localhost:8000.'
+      error.message = `Không kết nối được máy chủ. Frontend hiện đang gọi API tại ${API_URL}.`
     } else if (typeof error.response.data?.detail === 'string') {
       error.message = error.response.data.detail
     } else if (Array.isArray(error.response.data?.detail) && error.response.data.detail[0]?.msg) {
@@ -68,8 +99,23 @@ export async function getKolBookings() {
   return data
 }
 
+export async function getKolBookingLogs(bookingId: string) {
+  const { data } = await api.get<BookingActivityLog[]>(`/kol/bookings/${bookingId}/logs`)
+  return data
+}
+
+export async function createKolManualBooking(payload: KolManualBookingPayload) {
+  const { data } = await api.post<Booking>('/kol/bookings', payload)
+  return data
+}
+
 export async function updateBookingStatus(bookingId: string, status: string) {
   const { data } = await api.patch<Booking>(`/kol/bookings/${bookingId}`, { status })
+  return data
+}
+
+export async function updateBookingProgress(bookingId: string, payload: BookingProgressPayload) {
+  const { data } = await api.patch<Booking>(`/kol/bookings/${bookingId}/progress`, payload)
   return data
 }
 

@@ -17,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   requestAuth: [];
+  success: [];
 }>();
 
 type FieldName =
@@ -60,6 +61,7 @@ const paymentResult = reactive<{
 
 function closePaymentModal() {
   paymentResult.visible = false;
+  emit("success");
 }
 
 function onPaymentKeydown(event: KeyboardEvent) {
@@ -260,6 +262,14 @@ async function submitBooking() {
     state.isSubmitting = false;
   }
 }
+
+function copyToClipboard(text: string, label: string) {
+  navigator.clipboard.writeText(text).then(() => {
+    toast.success(`Đã sao chép ${label} vào bộ nhớ tạm!`);
+  }).catch(() => {
+    toast.error(`Không thể sao chép ${label}.`);
+  });
+}
 </script>
 
 <template>
@@ -434,10 +444,10 @@ async function submitBooking() {
       </div>
 
       <button
-        class="sm:col-span-2 rounded-2xl px-5 py-3 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+        class="sm:col-span-2 rounded-2xl px-5 py-3 text-sm font-semibold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         type="submit"
         :disabled="state.isSubmitting || !hasBankAccount"
-        :style="{ background: kolProfile.primary_color }"
+        :style="{ background: kolProfile.primary_color, color: 'var(--profile-button-text)' }"
       >
         {{ state.isSubmitting ? 'Đang gửi yêu cầu...' : 'Gửi đặt lịch & nhận mã QR' }}
       </button>
@@ -474,16 +484,34 @@ async function submitBooking() {
 
             <div class="space-y-5 px-5 py-5">
               <div class="grid gap-3 sm:grid-cols-2">
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Mã thanh toán</p>
-                  <p class="mt-2 font-semibold text-white">{{ paymentResult.booking.payment_code }}</p>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Mã thanh toán</p>
+                    <p class="mt-2 font-semibold text-white truncate">{{ paymentResult.booking.payment_code }}</p>
+                  </div>
+                  <button 
+                    type="button"
+                    @click="copyToClipboard(paymentResult.booking.payment_code || '', 'mã thanh toán')"
+                    class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-sky-300 transition shrink-0 cursor-pointer"
+                  >
+                    Copy
+                  </button>
                 </div>
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Số tiền</p>
-                  <p class="mt-2 font-semibold text-emerald-200">
-                    {{ new Intl.NumberFormat('vi-VN').format(paymentResult.booking.total_amount) }}
-                    {{ paymentResult.booking.currency }}
-                  </p>
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Số tiền</p>
+                    <p class="mt-2 font-semibold text-emerald-200 truncate">
+                      {{ new Intl.NumberFormat('vi-VN').format(paymentResult.booking.total_amount) }}
+                      {{ paymentResult.booking.currency }}
+                    </p>
+                  </div>
+                  <button 
+                    type="button"
+                    @click="copyToClipboard(String(paymentResult.booking.total_amount), 'số tiền')"
+                    class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-sky-300 transition shrink-0 cursor-pointer"
+                  >
+                    Copy
+                  </button>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Gói</p>
@@ -502,16 +530,25 @@ async function submitBooking() {
 
               <div
                 v-if="paymentResult.booking.bank_account_number"
-                class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200"
+                class="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200 flex items-center justify-between gap-3"
               >
-                <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Nhận về</p>
-                <p class="mt-2 font-medium text-white">
-                  {{ paymentResult.booking.bank_name || 'Ngân hàng' }}
-                </p>
-                <p class="mt-1">
-                  {{ paymentResult.booking.bank_account_name }} ·
-                  {{ paymentResult.booking.bank_account_number }}
-                </p>
+                <div class="min-w-0">
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Nhận về</p>
+                  <p class="mt-2 font-medium text-white truncate">
+                    {{ paymentResult.booking.bank_name || 'Ngân hàng' }}
+                  </p>
+                  <p class="mt-1 truncate">
+                    {{ paymentResult.booking.bank_account_name }} ·
+                    {{ paymentResult.booking.bank_account_number }}
+                  </p>
+                </div>
+                <button 
+                  type="button"
+                  @click="copyToClipboard(paymentResult.booking.bank_account_number || '', 'số tài khoản')"
+                  class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-sky-300 transition shrink-0 cursor-pointer"
+                >
+                  Copy
+                </button>
               </div>
 
               <div
@@ -521,7 +558,7 @@ async function submitBooking() {
                 <img
                   :src="paymentResult.booking.payment_qr_url"
                   alt="Mã VietQR thanh toán"
-                  class="h-56 w-56 rounded-2xl border border-white/15 bg-white p-2"
+                  class="w-72 h-auto rounded-2xl border border-white/15 bg-white p-3 shadow-lg object-contain"
                 />
                 <p class="text-center text-sm leading-6 text-slate-300">
                   Quét bằng app ngân hàng để chuyển đúng số tiền và nội dung lệnh. Sau đó vào

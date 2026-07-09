@@ -10,15 +10,28 @@ defineProps<{
 
 <template>
   <section class="profile-section">
-    <p class="profile-section__label">Đặt lịch</p>
-    <h2 class="profile-section__title">{{ title ?? 'Gửi yêu cầu hợp tác' }}</h2>
-    <p v-if="subtitle" class="profile-section__body !mt-2 !opacity-80">{{ subtitle }}</p>
-    <div class="mt-5 grid gap-3 sm:grid-cols-2">
-      <div class="h-11 rounded-xl border border-current/12 bg-black/8"></div>
-      <div class="h-11 rounded-xl border border-current/12 bg-black/8"></div>
-      <div class="h-11 rounded-xl border border-current/12 bg-black/8 sm:col-span-2"></div>
-      <div class="h-24 rounded-xl border border-current/12 bg-black/8 sm:col-span-2"></div>
-      <div class="h-11 rounded-xl sm:col-span-2" :style="{ background: profile.primary_color }"></div>
+    <!-- Preview of CTA Card -->
+    <div class="relative overflow-hidden rounded-3xl border border-current/12 bg-current/5 p-6 sm:p-8 text-center flex flex-col items-center">
+      <p class="profile-section__label">Đặt lịch (Bản xem trước)</p>
+      <h2 class="profile-section__title text-2xl font-bold mt-2">{{ title ?? 'Đặt lịch chơi cùng' }}</h2>
+      <p v-if="subtitle" class="mt-2 text-sm opacity-80 max-w-md">{{ subtitle }}</p>
+
+      <div class="mt-4 text-xs bg-current/8 px-4 py-2 rounded-xl border border-current/12 max-w-md">
+        Khách hàng sẽ nhấp vào nút dưới đây để mở form đặt lịch trong một Popup Modal, thay vì hiển thị trực tiếp ở chân trang như trước.
+      </div>
+      
+      <button 
+        type="button"
+        disabled
+        class="mt-6 px-8 py-3.5 rounded-full font-bold opacity-80 cursor-not-allowed"
+        :style="{ 
+          background: profile.primary_color || '#8b5cf6', 
+          color: 'var(--profile-button-text)',
+          boxShadow: `0 10px 30px ${profile.primary_color || '#8b5cf6'}40` 
+        }"
+      >
+        Đặt lịch ngay
+      </button>
     </div>
   </section>
 </template>

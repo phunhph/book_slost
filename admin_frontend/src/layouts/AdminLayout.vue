@@ -1,47 +1,72 @@
 <template>
-  <div class="min-h-screen bg-[var(--sb-bg)]">
+  <div class="min-h-screen bg-transparent p-4 lg:p-6">
+    <!-- Floating Sidebar -->
     <aside
-      class="fixed inset-y-0 left-0 z-30 w-[min(16rem,85vw)] -translate-x-full overflow-y-auto bg-[var(--sb-sidebar)] text-white transition-transform lg:w-64 lg:translate-x-0"
+      class="fixed inset-y-4 left-4 z-30 w-64 -translate-x-full overflow-y-auto bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-4 shadow-2xl transition-transform lg:translate-x-0 flex flex-col"
       :class="{ 'translate-x-0': sidebarOpen }"
       :aria-hidden="!sidebarOpen ? 'true' : undefined"
     >
-      <div class="flex h-16 items-center border-b border-white/10 px-6">
-        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--sb-primary)] font-bold">AB</div>
-        <div class="ml-3">
-          <p class="text-xs uppercase tracking-wider text-white/60">SB Admin</p>
-          <p class="font-bold">Backoffice</p>
+      <!-- Sidebar Header -->
+      <div class="flex items-center gap-3 px-2 py-4 mb-4 border-b border-white/5">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 font-bold text-white shadow-lg shadow-indigo-500/35">AB</div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">Slost Admin</p>
+          <p class="text-sm font-bold text-white">Backoffice</p>
         </div>
       </div>
-      <nav class="space-y-1 p-4">
+
+      <!-- Navigation Menu -->
+      <nav class="space-y-1.5 flex-1">
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold text-white/80 transition hover:bg-[var(--sb-sidebar-hover)] hover:text-white"
-          active-class="!bg-[var(--sb-primary)] !text-white"
+          class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-300 transition-all hover:bg-white/5 hover:text-white"
+          active-class="!bg-gradient-to-r !from-indigo-600 !to-indigo-500 !text-white shadow-lg shadow-indigo-500/25"
           @click="sidebarOpen = false"
         >
-          <span>{{ item.icon }}</span>
+          <span class="text-base">{{ item.icon }}</span>
           <span>{{ item.label }}</span>
         </RouterLink>
       </nav>
+
+      <!-- Account Info Area -->
+      <div class="mt-auto p-3.5 rounded-2xl bg-white/5 border border-white/5">
+        <p class="text-[10px] uppercase tracking-wider text-slate-500">Tài khoản</p>
+        <p class="truncate text-xs font-medium text-white mt-1">{{ auth.user?.email }}</p>
+        <p class="text-[9px] text-indigo-300 mt-0.5 uppercase tracking-wider">Admin Role</p>
+      </div>
     </aside>
 
-    <div v-if="sidebarOpen" class="fixed inset-0 z-20 bg-black/40 lg:hidden" @click="sidebarOpen = false" />
+    <!-- Overlay under Sidebar (mobile only) -->
+    <div v-if="sidebarOpen" class="fixed inset-0 z-20 bg-slate-950/60 backdrop-blur-sm lg:hidden" @click="sidebarOpen = false" />
 
-    <div class="lg:pl-64">
-      <header class="sticky top-0 z-10 flex min-h-16 flex-wrap items-center justify-between gap-2 border-b border-[var(--sb-card-border)] bg-white px-4 py-3 shadow-sm sm:px-6">
-        <button class="rounded-lg border px-3 py-2 text-sm lg:hidden" type="button" :aria-expanded="sidebarOpen" @click="sidebarOpen = !sidebarOpen">Menu</button>
-        <div class="hidden text-sm text-slate-500 lg:block">Quản lý hệ thống Affiliate Booking</div>
-        <div class="flex min-w-0 items-center gap-2 sm:gap-3">
-          <span class="max-w-[10rem] truncate text-sm text-slate-600 sm:max-w-xs">{{ auth.user?.email }}</span>
-          <button class="rounded-lg bg-[var(--sb-primary)] px-4 py-2 text-sm font-semibold text-white" @click="handleLogout">
+    <!-- Content Area wrapper -->
+    <div class="lg:pl-72 flex flex-col min-h-screen">
+      <!-- Page Header -->
+      <header class="rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-xl px-5 py-4 shadow-xl flex items-center justify-between gap-3">
+        <button 
+          class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 transition cursor-pointer lg:hidden" 
+          type="button" 
+          :aria-expanded="sidebarOpen" 
+          @click="sidebarOpen = !sidebarOpen"
+        >
+          Menu
+        </button>
+        <div class="hidden text-xs font-bold text-slate-400 lg:block uppercase tracking-wider">Hệ thống quản lý Affiliate Booking</div>
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="max-w-[10rem] truncate text-xs text-slate-300 sm:max-w-xs">{{ auth.user?.email }}</span>
+          <button 
+            class="rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white px-3 py-1.5 text-xs font-semibold transition cursor-pointer active:scale-95" 
+            @click="handleLogout"
+          >
             Đăng xuất
           </button>
         </div>
       </header>
 
-      <main class="p-4 sm:p-6">
+      <!-- Main Content Page -->
+      <main class="py-6 flex-1 min-w-0">
         <RouterView />
       </main>
     </div>

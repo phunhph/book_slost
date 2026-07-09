@@ -28,17 +28,30 @@ export function buildProfileSurfaceStyle(profile: ProfileThemeInput): Record<str
   const resolved = withResolvedProfileTheme(profile)
   const style: Record<string, string> = {}
 
+  let isBgDark = true
   if (resolved.bg_type === 'image' && resolved.bg_value) {
     style.backgroundImage = `linear-gradient(180deg, rgba(2, 6, 23, 0.44), rgba(2, 6, 23, 0.88)), url(${resolved.bg_value})`
     style.backgroundSize = 'cover'
     style.backgroundPosition = 'center'
+    isBgDark = true
   } else if (resolved.bg_type === 'gradient') {
-    style.background = resolved.bg_value || DEFAULT_PROFILE_GRADIENT
+    const val = resolved.bg_value || DEFAULT_PROFILE_GRADIENT
+    style.background = val
+    isBgDark = isGradientDark(val)
   } else {
-    style.background = resolved.bg_value || DEFAULT_PROFILE_SOLID
+    const solidColor = resolved.bg_value || DEFAULT_PROFILE_SOLID
+    style.background = solidColor
+    isBgDark = isDarkColor(solidColor)
   }
 
-  style.color = resolved.text_color || '#F8FAFC'
+  let textColor = resolved.text_color || (isBgDark ? '#F8FAFC' : '#111827')
+  const isTextDark = isDarkColor(textColor)
+
+  if (isBgDark === isTextDark) {
+    textColor = isBgDark ? '#F8FAFC' : '#111827'
+  }
+
+  style.color = textColor
 
   if (resolved.font_family) {
     style.fontFamily = resolved.font_family
@@ -101,6 +114,23 @@ export function isDarkColor(color: string | null | undefined): boolean {
   const normalized = channelHex(color)
   if (!normalized) return true
   return getRelativeLuminance(normalized) < 0.45
+}
+
+export function isGradientDark(gradient: string): boolean {
+  const hexMatches = gradient.match(/#[0-9a-fA-F]{3,8}/g)
+  if (!hexMatches || hexMatches.length === 0) {
+    const lower = gradient.toLowerCase()
+    return !lower.includes('white') && !lower.includes('light') && !lower.includes('transparent')
+  }
+
+  let darkCount = 0
+  for (const hex of hexMatches) {
+    if (isDarkColor(hex)) {
+      darkCount++
+    }
+  }
+
+  return darkCount >= hexMatches.length / 2
 }
 
 export function contrastTextOn(color: string | null | undefined): string {

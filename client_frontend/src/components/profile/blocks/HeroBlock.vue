@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { contrastTextOn } from '@/lib/profileTheme'
 import type { UserProfile } from '@/types/profile'
+import { useAuthStore } from '@/stores/auth'
 
 const props = withDefaults(
   defineProps<{
@@ -16,6 +17,9 @@ const props = withDefaults(
 const emit = defineEmits<{
   openAuth: []
 }>()
+
+const authStore = useAuthStore()
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const avatarClass = computed(() => {
   if (props.profile.avatar_style === 'circle') return 'rounded-full'
@@ -65,10 +69,36 @@ const hasQuickContact = computed(
       </div>
 
       <div class="min-w-0 flex-1 text-center sm:text-left">
-        <p class="profile-public-eyebrow">Hồ sơ creator</p>
+        <p class="profile-public-eyebrow">Creator profile</p>
         <h1 class="profile-public-title">{{ profile.display_name ?? profile.username ?? 'Creator chưa đặt tên' }}</h1>
         <p class="profile-public-handle">@{{ profile.username ?? 'creator' }}</p>
-        <p v-if="showBio && profile.bio" class="profile-public-bio">{{ profile.bio }}</p>
+        
+        <!-- Pricing info at the top -->
+        <div 
+          v-if="profile.price_per_match || profile.price_per_hour"
+          class="mt-3 flex flex-wrap justify-center sm:justify-start gap-2.5"
+        >
+          <span 
+            v-if="profile.price_per_match"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-current/12 bg-current/5 px-3.5 py-1.5 text-xs font-semibold backdrop-blur-md text-current/80"
+          >
+            Theo trận:
+            <strong class="font-bold text-current">
+              {{ new Intl.NumberFormat('vi-VN').format(profile.price_per_match) }} {{ profile.currency || 'VND' }}
+            </strong>
+          </span>
+          <span 
+            v-if="profile.price_per_hour"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-current/12 bg-current/5 px-3.5 py-1.5 text-xs font-semibold backdrop-blur-md text-current/80"
+          >
+            Theo giờ:
+            <strong class="font-bold text-current">
+              {{ new Intl.NumberFormat('vi-VN').format(profile.price_per_hour) }} {{ profile.currency || 'VND' }}
+            </strong>
+          </span>
+        </div>
+
+        <p v-if="showBio && profile.bio" class="profile-public-bio profile-public-bio--compact mt-4">{{ profile.bio }}</p>
 
         <div v-if="hasQuickContact" class="profile-public-contacts justify-center sm:justify-start">
           <a v-if="profile.phone" class="profile-public-chip profile-public-chip--accent" :href="`tel:${profile.phone}`">
@@ -87,6 +117,7 @@ const hasQuickContact = computed(
 
         <div v-if="!hideActions" class="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
           <button
+            v-if="!isAuthenticated"
             class="profile-public-button rounded-full border px-5 py-2.5 text-sm font-semibold transition hover:brightness-110"
             :style="buttonStyle"
             type="button"

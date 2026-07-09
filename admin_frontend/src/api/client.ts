@@ -1,4 +1,34 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+function inferApiBaseUrl() {
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configured) return configured;
+
+  if (typeof window === "undefined") return "http://localhost:8000";
+
+  const { protocol, hostname } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:8000";
+  }
+
+  const parts = hostname.split(".");
+  if (parts.length >= 3 && ["admin", "client", "kol"].includes(parts[0])) {
+    return `${protocol}//api.${parts.slice(1).join(".")}`;
+  }
+
+  if (hostname.startsWith("api.")) {
+    return `${protocol}//${hostname}`;
+  }
+
+  return `${protocol}//${hostname}`;
+}
+
+function inferApiUrl() {
+  const configured = import.meta.env.VITE_API_URL?.trim();
+  if (configured) return configured;
+  return `${inferApiBaseUrl().replace(/\/$/, "")}/api`;
+}
+
+export const API_BASE_URL = inferApiBaseUrl();
+const API_URL = inferApiUrl();
 
 export class ApiError extends Error {
   status: number;
@@ -31,7 +61,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}, tok
     response = await fetch(`${API_URL}${path}`, { ...options, headers });
   } catch {
     throw new ApiError(
-      "Không kết nối được máy chủ. Vui lòng kiểm tra mạng và đảm bảo backend đang chạy tại http://localhost:8000.",
+      `Không kết nối được máy chủ. Frontend hiện đang gọi API tại ${API_URL}.`,
       0,
     );
   }

@@ -16,7 +16,7 @@ const NETWORK_PATTERNS = [
 ]
 
 const DEFAULT_NETWORK_MESSAGE =
-  'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và đảm bảo backend đang chạy tại http://localhost:8000.'
+  'Không kết nối được máy chủ. Kiểm tra lại domain API production hoặc cấu hình VITE_API_URL / VITE_API_BASE_URL.'
 
 function isTechnicalNetworkMessage(message: string): boolean {
   const normalized = message.trim().toLowerCase()
