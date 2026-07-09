@@ -61,7 +61,18 @@ Nếu trên server còn folder `fromt_be` / `fromt_fe` (lỗi đánh máy cũ), 
 
 # GIAI ĐOẠN 1 — Chạy được trên VPS (deploy tay)
 
-## Bước 1. Cài package cơ bản
+### Làm ở đâu? (tóm tắt)
+
+| Bước | Việc | Làm ở đâu |
+|------|------|-----------|
+| 1 | Cài package, Node, Nginx… | **VPS** (SSH) |
+| 2 | DNS + firewall | **Panel domain** + **VPS** |
+| 3 → 10 | Clone code, DB, `.env`, build, Nginx, SSL | **VPS** (SSH) |
+
+> Từ **Bước 3** trở đi Giai đoạn 1: **toàn bộ trên VPS**, SSH vào server rồi chạy lệnh.  
+> Không cần làm trên máy Windows/local (trừ Bước 2 kiểm tra `nslookup` có thể chạy trên máy bạn).
+
+## Bước 1. Cài package cơ bản — **VPS (SSH)**
 
 SSH vào VPS:
 
@@ -80,7 +91,7 @@ node -v
 npm -v
 ```
 
-## Bước 2. Khai báo DNS (bắt buộc — làm trước HTTPS)
+## Bước 2. Khai báo DNS (bắt buộc — làm trước HTTPS) — **Panel domain** + **VPS**
 
 Vào panel quản lý domain `decodeareer.id.vn` (Cloudflare, Namecheap, nhà cung cấp domain…), tạo **4 bản ghi A**:
 
@@ -113,7 +124,7 @@ sudo ufw enable
 sudo ufw status
 ```
 
-## Bước 3. Clone / cập nhật code
+## Bước 3. Clone / cập nhật code — **VPS (SSH)**
 
 ```bash
 sudo mkdir -p /var/www/xuong
@@ -126,7 +137,7 @@ cd /var/www/xuong/book_slost
 git pull origin main
 ```
 
-## Bước 4. PostgreSQL
+## Bước 4. PostgreSQL — **VPS (SSH)**
 
 ```bash
 sudo -u postgres psql
@@ -140,7 +151,7 @@ CREATE DATABASE affiliate_booking_core OWNER book_slost;
 \q
 ```
 
-## Bước 5. Cấu hình backend `.env`
+## Bước 5. Cấu hình backend `.env` — **VPS (SSH)**
 
 ```bash
 cd /var/www/xuong/book_slost/backend
@@ -184,7 +195,7 @@ mkdir -p uploads/payment_proofs
 chmod -R 755 uploads
 ```
 
-## Bước 6. Systemd cho API (chạy nền)
+## Bước 6. Systemd cho API (chạy nền) — **VPS (SSH)**
 
 ```bash
 sudo nano /etc/systemd/system/book-slost-api.service
@@ -223,10 +234,11 @@ curl http://127.0.0.1:8000/health
 # Kỳ vọng: {"status":"ok"}
 ```
 
-## Bước 7. Env & build 3 frontend (production)
+## Bước 7. Env & build 3 frontend (production) — **VPS (SSH)**
 
 Vite đọc biến lúc **build** (`npm run build`), không đọc lúc runtime trên Nginx.  
-Tạo file **`.env.production`** trong từng folder frontend **trên VPS** (không commit lên Git).
+Tạo file **`.env`** hoặc **`.env.production`** trong từng folder frontend **trên VPS** (không commit lên Git).  
+Nếu đã có `.env` thì **không cần** `.env.production`.
 
 ### Bảng biến môi trường
 
@@ -278,7 +290,7 @@ npm ci
 npm run build
 ```
 
-> **Lưu ý:** Sau khi tạo `.env.production` trên VPS, mỗi lần `scripts/deploy.sh` chạy sẽ `npm run build` lại — file env **phải giữ trên server**, không bị ghi đè bởi `git pull`.
+> **Lưu ý:** File env trên VPS (`.env` hoặc `.env.production`) **không bị ghi đè** bởi `git pull` — giữ nguyên sau mỗi deploy.
 
 ### Dev local (tham khảo)
 
@@ -292,7 +304,7 @@ Copy từ `.env.example` tương ứng, dùng `http://localhost:8000` cho API.
 
 Sau build, mỗi app có thư mục `dist/` — Nginx sẽ trỏ vào đó.
 
-## Bước 8. Nginx — HTTP (port 80, chuẩn bị cho HTTPS)
+## Bước 8. Nginx — HTTP (port 80, chuẩn bị cho HTTPS) — **VPS (SSH)**
 
 ### API — `/etc/nginx/sites-available/api.decodeareer.id.vn`
 
@@ -395,7 +407,7 @@ curl -I http://admin.decodeareer.id.vn
 Nếu `curl` báo không resolve host → quay lại **Bước 2 DNS**.  
 Nếu `502` → kiểm tra `book-slost-api` (Bước 6).
 
-## Bước 9. Khai báo HTTPS (Let's Encrypt + Certbot)
+## Bước 9. Khai báo HTTPS (Let's Encrypt + Certbot) — **VPS (SSH)**
 
 Sau khi **4 domain resolve DNS** và **Nginx HTTP chạy OK**, cấp chứng chỉ SSL miễn phí:
 
@@ -448,7 +460,7 @@ sudo certbot renew --dry-run
 | `NET::ERR_CERT_COMMON_NAME_INVALID` | Truy cập IP thay vì domain | Dùng đúng URL `https://api.decodeareer.id.vn` |
 | Frontend gọi API lỗi mixed content | Build FE với `http://` API | `.env.production` phải dùng `https://api...` (Bước 7) |
 
-## Bước 10. Kiểm tra sau deploy tay
+## Bước 10. Kiểm tra sau deploy tay — **Trình duyệt** (máy bạn) + **VPS**
 
 | URL | Kỳ vọng |
 |-----|---------|
@@ -465,151 +477,124 @@ sudo certbot renew --dry-run
 
 ---
 
-# GIAI ĐOẠN 2 — CI/CD deploy tự động (GitHub Actions → VPS)
+# GIAI ĐOẠN 2 — CI/CD deploy tự động (MR/PR → `main` → VPS)
 
-Repo đã có:
+> **Điều kiện:** Đã xong **Giai đoạn 1** (site chạy trên VPS).
 
-- `.github/workflows/ci.yml` — chạy test + build khi push/PR
-- `.github/workflows/docker-build.yml` — chỉ **build image** trong CI (chưa deploy lên VPS)
+### Làm ở đâu? (tóm tắt)
 
-Mục tiêu: sau khi CI **pass** trên nhánh `main`, tự động SSH vào VPS, `git pull`, build, restart.
+| Bước | Việc | Làm ở đâu |
+|------|------|-----------|
+| 1 | `git pull` OK trên VPS | **VPS** (SSH) |
+| 2 | `chmod +x deploy.sh` | **VPS** (SSH) |
+| 3 | Tạo SSH key deploy | **Máy local** → public key gắn **VPS**, private key → **GitHub** |
+| 4 | Secrets `VPS_HOST`, `VPS_USER`… | **GitHub** (web) |
+| 5 | Merge MR, xem Actions | **GitHub** (web) |
+| 6 | OAuth URLs (nếu dùng) | **Google Cloud** (web) |
 
-## Bước 1. Script deploy trên VPS
+## Luồng deploy
 
-Repo đã có sẵn `scripts/deploy.sh`. Sau `git pull` trên VPS, chỉ cần:
+```text
+Tạo PR/MR → CI chạy (test + build) → KHÔNG deploy
+       ↓
+Merge vào main → CI chạy lại trên main
+       ↓
+CI xanh → job "Deploy VPS" SSH vào server → scripts/deploy.sh
+```
+
+| Sự kiện | CI test/build | Deploy VPS |
+|---------|:-------------:|:----------:|
+| Mở PR / MR vào `main` | ✅ | ❌ |
+| Push thẳng lên `main` | ✅ | ✅ (nếu CI xanh) |
+| Merge PR/MR vào `main` | ✅ | ✅ (nếu CI xanh) |
+| Manual (Actions → Deploy VPS manual) | ❌ | ✅ |
+
+Workflow:
+- `.github/workflows/ci.yml` — test + build + **deploy khi push `main`**
+- `.github/workflows/deploy-vps.yml` — deploy tay (không cần chạy CI)
+
+## Bước 1. Chuẩn bị VPS cho `git pull` — **VPS (SSH)**
+
+User deploy (ví dụ `ubuntu`) phải pull được code từ GitHub:
+
+```bash
+cd /var/www/xuong/book_slost
+git remote -v
+git pull origin main
+```
+
+Nếu repo private, thêm **Deploy key** (GitHub → Settings → Deploy keys) hoặc SSH key của user VPS vào GitHub account.
+
+## Bước 2. Script deploy trên VPS — **VPS (SSH)**
+
+Repo có `scripts/deploy.sh`. Trên VPS:
 
 ```bash
 chmod +x /var/www/xuong/book_slost/scripts/deploy.sh
 ```
 
-Nội dung script (tham khảo):
+Script sẽ:
+1. `git reset --hard origin/main`
+2. Kiểm tra mỗi FE có `.env` **hoặc** `.env.production`; backend có `.env`
+3. `pip install` + `alembic upgrade head`
+4. `npm ci && npm run build` (admin, client, kol)
+5. `systemctl restart book-slost-api` + reload nginx
+6. `curl` health check
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
+> `.env` (FE) và `backend/.env` **phải có sẵn trên VPS** — không commit Git.
 
-APP_ROOT="/var/www/xuong/book_slost"
-cd "$APP_ROOT"
+## Bước 3. SSH key cho GitHub Actions — **Máy local** + **VPS** + **GitHub**
 
-echo "==> Git pull"
-git fetch origin main
-git reset --hard origin/main
-
-echo "==> Backend: deps + migrate"
-cd backend
-source .venv/bin/activate
-pip install -r requirements.txt
-alembic upgrade head
-deactivate
-
-echo "==> Build admin"
-cd "$APP_ROOT/admin_frontend"
-npm ci
-npm run build
-
-echo "==> Build client"
-cd "$APP_ROOT/client_frontend"
-npm ci
-npm run build
-
-echo "==> Build kol"
-cd "$APP_ROOT/kol_frontend"
-npm ci
-npm run build
-
-echo "==> Restart API"
-sudo systemctl restart book-slost-api
-sudo systemctl reload nginx
-
-echo "==> Deploy OK"
-curl -fsS http://127.0.0.1:8000/health
-```
-
-```bash
-chmod +x /var/www/xuong/book_slost/scripts/deploy.sh
-```
-
-Đảm bảo `.env.production` đã có trong từng frontend (bước 6 giai đoạn 1) — file này **không** commit secret, chỉ nằm trên VPS.
-
-## Bước 2. SSH key cho GitHub Actions
-
-Trên máy local (hoặc VPS):
+Tạo key trên **máy local** (Windows/PowerShell hoặc Git Bash):
 
 ```bash
 ssh-keygen -t ed25519 -C "github-deploy-book-slost" -f deploy_book_slost -N ""
 ```
 
-- **Public key** (`deploy_book_slost.pub`) → thêm vào VPS:  
-  `~/.ssh/authorized_keys` của user deploy (ví dụ `ubuntu` hoặc user bạn dùng)
-- **Private key** → lưu vào GitHub Secret
+- **Public key** → VPS `~/.ssh/authorized_keys` (user deploy)
+- **Private key** → GitHub Secret `VPS_SSH_KEY`
 
-User deploy cần quyền:
+Cho phép restart service không hỏi mật khẩu — chạy trên **VPS**:
 
 ```bash
-# Cho phép restart service không hỏi mật khẩu (tùy chọn)
 sudo visudo
-# Thêm dòng:
-# deployuser ALL=(ALL) NOPASSWD: /bin/systemctl restart book-slost-api, /bin/systemctl reload nginx
+# Thêm (đổi ubuntu thành user deploy của bạn):
+# ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart book-slost-api, /bin/systemctl reload nginx
 ```
 
-## Bước 3. GitHub Secrets
+## Bước 4. GitHub Secrets — **GitHub (web)**
 
-Vào repo GitHub → **Settings → Secrets and variables → Actions**, thêm:
+Repo → **Settings → Secrets and variables → Actions → Repository secrets**.
 
-| Secret | Ví dụ |
-|--------|--------|
-| `VPS_HOST` | IP hoặc hostname VPS |
-| `VPS_USER` | `ubuntu` |
-| `VPS_SSH_KEY` | Nội dung private key |
-| `VPS_PORT` | `22` (optional) |
+Bạn đã tạo đúng **4 secret** sau (tên phải khớp chính xác):
+
+| Secret | Giá trị gợi ý |
+|--------|----------------|
+| `VPS_HOST` | IP VPS, ví dụ `123.45.67.89` |
+| `VPS_USER` | User SSH, ví dụ `ubuntu` |
+| `VPS_SSH_KEY` | Toàn bộ nội dung file **private key** |
 | `VPS_APP_PATH` | `/var/www/xuong/book_slost` |
 
-## Bước 4. Workflow deploy
+Workflow `.github/workflows/ci.yml` (job **Deploy VPS**) và `deploy-vps.yml` (manual) đều dùng 4 biến này — **không cần** secret khác.
 
-Repo đã có `.github/workflows/deploy-vps.yml`. Chỉ cần cấu hình GitHub Secrets (bước 3), push lên `main` là workflow tự chạy sau CI.
+> `VPS_SSH_KEY`: paste cả block `-----BEGIN OPENSSH PRIVATE KEY-----` … `-----END OPENSSH PRIVATE KEY-----`
 
-Nội dung workflow (tham khảo):
+## Bước 5. Kiểm tra sau khi merge MR — **GitHub (web)** + **VPS**
 
-```yaml
-name: Deploy VPS
+1. Merge PR vào `main` trên GitHub
+2. Vào **Actions** → workflow **CI** → run mới nhất
+3. Thấy job **Deploy VPS** màu xanh
+4. Trên VPS:
 
-on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [main, master]
-  workflow_dispatch:
-
-concurrency:
-  group: deploy-vps
-  cancel-in-progress: true
-
-jobs:
-  deploy:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
-          script: |
-            cd ${{ secrets.VPS_APP_PATH }}
-            ./scripts/deploy.sh
+```bash
+curl https://api.decodeareer.id.vn/health
 ```
 
-Luồng:
+### Deploy tay (không qua merge)
 
-```text
-git push main → CI (test + build) → success → Deploy VPS (SSH + deploy.sh)
-```
+Actions → **Deploy VPS (manual)** → **Run workflow**
 
-## Bước 5. Google OAuth (nếu dùng)
+## Bước 6. Google OAuth (nếu dùng) — **Google Cloud (web)**
 
 Trong Google Cloud Console, thêm **Authorized redirect URI**:
 
@@ -632,7 +617,7 @@ Và callback frontend (theo từng app):
 - [ ] PostgreSQL + `backend/.env` (URL `https://`)
 - [ ] `alembic upgrade head`
 - [ ] systemd `book-slost-api` chạy OK
-- [ ] `.env.production` 3 frontend (`https://api...`)
+- [ ] `.env` hoặc `.env.production` 3 frontend (`https://api...`)
 - [ ] Build 3 frontend
 - [ ] Nginx HTTP (Bước 8) — `curl http://...` OK
 - [ ] **Bước 9:** Certbot HTTPS + redirect 80→443
@@ -641,10 +626,12 @@ Và callback frontend (theo từng app):
 
 ### CI/CD
 
-- [ ] `scripts/deploy.sh` trên VPS
-- [ ] SSH key + GitHub Secrets
-- [ ] `.github/workflows/deploy-vps.yml`
-- [ ] Push `main` → CI xanh → deploy tự chạy
+- [ ] VPS `git pull origin main` OK (deploy key nếu repo private)
+- [ ] `chmod +x scripts/deploy.sh`
+- [ ] `.env` (FE) + `backend/.env` trên VPS
+- [ ] GitHub Secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_APP_PATH`
+- [ ] `sudo visudo` cho restart service
+- [ ] Merge MR vào `main` → Actions job **Deploy VPS** xanh
 
 ---
 
