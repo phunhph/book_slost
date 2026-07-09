@@ -59,7 +59,15 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        origins = {origin.strip() for origin in self.cors_origins.split(",") if origin.strip()}
+        origins.update(
+            {
+                self.admin_frontend_url.rstrip("/"),
+                self.client_frontend_url.rstrip("/"),
+                self.kol_frontend_url.rstrip("/"),
+            }
+        )
+        return [origin for origin in origins if origin]
 
     def frontend_callback_url(self, app_target: str) -> str:
         if app_target == "client":

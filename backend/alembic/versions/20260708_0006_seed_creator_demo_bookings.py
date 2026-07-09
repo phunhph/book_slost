@@ -7,7 +7,9 @@ Create Date: 2026-07-08 20:40:00
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+import random
+import uuid
+from datetime import UTC, datetime, timedelta, timezone
 from urllib.parse import quote
 
 from alembic import op
@@ -32,13 +34,9 @@ CUSTOMERS = [
 BANK_CODE = "970422"
 BANK_ACCOUNT = "0962954690"
 BANK_NAME = "CREATOR DEMO"
-BANK_DISPLAY = "MB Bank"
 
-# Keep unit prices aligned with seeded creator pricing
 PRICE_MATCH = 150000
 PRICE_HOUR = 100000
-
-BOOKING_IDS = [f"dddddddd-dddd-dddd-dddd-{str(i).zfill(12)}" for i in range(1, 31)]
 
 
 def _vietqr(amount: int, code: str, guest: str) -> str:
@@ -52,10 +50,13 @@ def _vietqr(amount: int, code: str, guest: str) -> str:
 
 def upgrade() -> None:
     conn = op.get_bind()
-    booking_list = ", ".join(f"'{bid}'::uuid" for bid in BOOKING_IDS)
-    conn.execute(sa.text(f"DELETE FROM bookings WHERE id IN ({booking_list})"))
+    
+    # 1. Clear old bookings for the demo creator
+    conn.execute(
+        sa.text(f"DELETE FROM bookings WHERE kol_user_id = '{KOL_ID}'::uuid")
+    )
 
-    # Ensure creator pricing + bank stay usable for QR
+    # Ensure creator pricing + bank details are active
     conn.execute(
         sa.text(
             f"""
@@ -73,91 +74,150 @@ def upgrade() -> None:
         )
     )
 
-    now = datetime.now(UTC)
-    specs = [
-        # upcoming / calendar heavy
-        ("pending", "unpaid", "match", 2, 0, 10, CUSTOMER_DEMO, "Customer Demo", "0901000002", "Duo ranked tối nay"),
-        ("pending", "unpaid", "hourly", 2, 0, 14, CUSTOMERS[0], "An Nguyễn", "0911000001", "Coach aim 2 giờ hôm nay"),
-        ("confirmed", "paid", "match", 3, 0, 19, CUSTOMERS[1], "Bảo Trần", "0911000002", "3 trận Competitive đã chốt"),
-        ("pending", "unpaid", "match", 1, 1, 9, None, "Guest Minh", "0987000111", "Khách vãng lai sáng mai"),
-        ("confirmed", "paid", "hourly", 3, 1, 15, CUSTOMERS[2], "Chi Lê", "0911000003", "Collab content chiều mai"),
-        ("pending", "unpaid", "hourly", 1, 1, 20, CUSTOMERS[3], "Dũng Phạm", "0911000004", "Review VOD tối mai"),
-        ("confirmed", "paid", "match", 2, 2, 11, CUSTOMERS[4], "Em Võ", "0911000005", "2 trận custom room"),
-        ("pending", "unpaid", "match", 4, 2, 16, CUSTOMER_DEMO, "Customer Demo", "0901000002", "Squad 4 trận cuối tuần"),
-        ("confirmed", "unpaid", "hourly", 2, 3, 10, CUSTOMERS[0], "An Nguyễn", "0911000001", "Đã xác nhận nhưng chưa TT"),
-        ("pending", "unpaid", "match", 1, 3, 18, None, "Guest Lan", "0908111222", "Đặt form công khai"),
-        ("confirmed", "paid", "hourly", 4, 4, 13, CUSTOMERS[1], "Bảo Trần", "0911000002", "Marathon 4 giờ weekend"),
-        ("pending", "unpaid", "match", 2, 5, 20, CUSTOMERS[2], "Chi Lê", "0911000003", "Night duo ranked"),
-        ("confirmed", "paid", "match", 1, 6, 9, CUSTOMERS[3], "Dũng Phạm", "0911000004", "Warm-up sáng CN"),
-        ("pending", "unpaid", "hourly", 2, 7, 15, CUSTOMERS[4], "Em Võ", "0911000005", "Coaching mid-week"),
-        ("confirmed", "paid", "match", 3, 8, 17, CUSTOMER_DEMO, "Customer Demo", "0901000002", "Scrim 3 trận tuần sau"),
-        ("pending", "unpaid", "hourly", 1, 9, 11, None, "Guest Khoa", "0933555666", "Trial 1 giờ"),
-        ("confirmed", "paid", "match", 2, 10, 19, CUSTOMERS[0], "An Nguyễn", "0911000001", "Event collab đêm"),
-        ("pending", "unpaid", "match", 1, 12, 14, CUSTOMERS[1], "Bảo Trần", "0911000002", "Booking xa hơn 12 ngày"),
-        ("confirmed", "paid", "hourly", 3, 14, 16, CUSTOMERS[2], "Chi Lê", "0911000003", "Content shoot + live"),
-        # history / reports
-        ("completed", "paid", "match", 2, -1, 18, CUSTOMERS[3], "Dũng Phạm", "0911000004", "Hoàn thành hôm qua"),
-        ("completed", "paid", "hourly", 2, -2, 15, CUSTOMERS[4], "Em Võ", "0911000005", "Coach xong 2 ngày trước"),
-        ("cancelled", "unpaid", "match", 1, -2, 12, None, "Guest Hủy", "0977000888", "Khách hủy sát giờ"),
-        ("completed", "paid", "match", 3, -3, 20, CUSTOMER_DEMO, "Customer Demo", "0901000002", "3 trận đã thu tiền"),
-        ("completed", "paid", "hourly", 1, -4, 10, CUSTOMERS[0], "An Nguyễn", "0911000001", "Session sáng tuần trước"),
-        ("cancelled", "unpaid", "hourly", 2, -5, 16, CUSTOMERS[1], "Bảo Trần", "0911000002", "Dời lịch / hủy"),
-        ("completed", "paid", "match", 4, -6, 19, CUSTOMERS[2], "Chi Lê", "0911000003", "Squad weekend trước"),
-        ("completed", "paid", "hourly", 3, -8, 14, CUSTOMERS[3], "Dũng Phạm", "0911000004", "Coaching dài 3 giờ"),
-        ("completed", "paid", "match", 1, -10, 21, None, "Guest Tuấn", "0966123456", "Guest hoàn tất"),
-        ("cancelled", "unpaid", "match", 2, -12, 9, CUSTOMERS[4], "Em Võ", "0911000005", "Hủy sớm"),
-        ("completed", "paid", "hourly", 2, -15, 13, CUSTOMER_DEMO, "Customer Demo", "0901000002", "Report doanh thu tháng trước"),
+    # 2. Seed large dataset (2024 to 2026)
+    now = datetime.now(timezone.utc)
+    mock_guests = [
+        ("Khánh Trần", "0912345678"),
+        ("Bình Nguyễn", "0987654321"),
+        ("Hải Đỗ", "0905556667"),
+        ("Thanh Lê", "0977888999"),
+        ("Duy Phạm", "0933444555"),
+        ("Quỳnh Phan", "0966777888"),
+        ("Nam Vũ", "0944111222"),
+        ("Tú Hoàng", "0922333444"),
+        ("Linh Đặng", "0988999000"),
+        ("Sơn Ngô", "0955666777"),
     ]
 
-    for index, spec in enumerate(specs, start=1):
-        status, payment_status, pricing_type, quantity, day_offset, hour, customer_id, guest_name, guest_phone, notes = spec
-        unit = PRICE_MATCH if pricing_type == "match" else PRICE_HOUR
-        total = unit * quantity
-        code = f"BKCREA{str(index).zfill(4)}"
-        scheduled = (now + timedelta(days=day_offset)).replace(
-            hour=hour % 24, minute=(index * 7) % 60, second=0, microsecond=0
-        )
-        qr = _vietqr(total, code, guest_name).replace("'", "''")
-        customer_sql = f"'{customer_id}'::uuid" if customer_id else "NULL"
-        notes_sql = notes.replace("'", "''")
-        guest_sql = guest_name.replace("'", "''")
-        booking_id = BOOKING_IDS[index - 1]
+    notes_pool = [
+        "Duo ranked tối nay",
+        "Coach aim 2 giờ hôm nay",
+        "Giao lưu custom room",
+        "Squad 4 trận cuối tuần",
+        "Collab làm content Tiktok",
+        "Review VOD đấu giải",
+        "Marathon leo rank cuối tuần",
+        "Training kỹ năng macro",
+    ]
 
-        conn.execute(
-            sa.text(
-                f"""
-                INSERT INTO bookings (
-                    id, kol_user_id, customer_user_id,
-                    guest_name, guest_phone, guest_zalo, guest_messenger,
-                    scheduled_at, pricing_type, quantity, unit_price, total_amount, currency,
-                    payment_qr_url, payment_code, payment_status, status, notes
-                ) VALUES (
-                    '{booking_id}'::uuid,
-                    '{KOL_ID}'::uuid,
-                    {customer_sql},
-                    '{guest_sql}',
-                    '{guest_phone}',
-                    NULL,
-                    NULL,
-                    '{scheduled.isoformat()}'::timestamptz,
-                    '{pricing_type}',
-                    {quantity},
-                    {unit},
-                    {total},
-                    'VND',
-                    '{qr}',
-                    '{code}',
-                    '{payment_status}',
-                    '{status}',
-                    '{notes_sql}'
+    # Use fixed seed for reproducible random outputs inside Alembic
+    rng = random.Random(42)
+
+    for year in [2024, 2025, 2026]:
+        for month in range(1, 13):
+            month_date = datetime(year, month, 15, tzinfo=timezone.utc)
+            is_past = month_date < now.replace(day=15)
+            is_present = (year == now.year and month == now.month)
+
+            if year == 2024:
+                num_bookings = rng.randint(6, 12)
+            elif year == 2025:
+                num_bookings = rng.randint(10, 18)
+            else: # 2026
+                num_bookings = rng.randint(12, 22)
+
+            for idx in range(num_bookings):
+                day = rng.randint(1, 28)
+                hour = rng.randint(8, 22)
+                minute = rng.randint(0, 59)
+                scheduled_at = datetime(year, month, day, hour, minute, tzinfo=timezone.utc)
+
+                pricing_type = rng.choice(["match", "hourly"])
+                quantity = rng.randint(1, 4)
+                unit = PRICE_MATCH if pricing_type == "match" else PRICE_HOUR
+                total = unit * quantity
+
+                if is_past:
+                    rand = rng.random()
+                    if rand < 0.75:
+                        status, payment_status = "completed", "paid"
+                    elif rand < 0.90:
+                        status, payment_status = "cancelled", "unpaid"
+                    else:
+                        status, payment_status = "confirmed", rng.choice(["paid", "unpaid"])
+                elif is_present:
+                    rand = rng.random()
+                    if rand < 0.40:
+                        status, payment_status = "completed", "paid"
+                    elif rand < 0.70:
+                        status, payment_status = "confirmed", rng.choice(["paid", "unpaid"])
+                    elif rand < 0.85:
+                        status, payment_status = "pending", "unpaid"
+                    else:
+                        status, payment_status = "cancelled", "unpaid"
+                else:
+                    rand = rng.random()
+                    if rand < 0.60:
+                        status, payment_status = "pending", "unpaid"
+                    elif rand < 0.90:
+                        status, payment_status = "confirmed", "unpaid"
+                    else:
+                        status, payment_status = "confirmed", "paid"
+
+                if rng.random() < 0.3:
+                    guest_name, guest_phone = rng.choice(mock_guests)
+                    customer_sql = "NULL"
+                else:
+                    customer_user_id = rng.choice(CUSTOMERS + [CUSTOMER_DEMO])
+                    customer_sql = f"'{customer_user_id}'::uuid"
+                    guest_name = "Customer Demo" if customer_user_id == CUSTOMER_DEMO else f"Khách Hàng {str(customer_user_id)[:4]}"
+                    guest_phone = f"0901{rng.randint(100000, 999999)}"
+
+                bid = str(uuid.UUID(int=rng.getrandbits(128)))
+                short_uuid = bid.replace("-", "")[:6].upper()
+                code = f"BK{year % 100}{month:02d}{short_uuid}"
+                qr = _vietqr(total, code, guest_name).replace("'", "''")
+                notes_str = rng.choice(notes_pool).replace("'", "''")
+                guest_str = guest_name.replace("'", "''")
+
+                # set proof fields if paid
+                proof_url = "'https://example.com/proofs/demo.png'" if payment_status == "paid" else "NULL"
+                proof_note = "'Đã thanh toán chuyển khoản'" if payment_status == "paid" else "NULL"
+                proof_time = f"'{ (scheduled_at - timedelta(minutes=rng.randint(5, 30))).isoformat() }'::timestamptz" if payment_status == "paid" else "NULL"
+                review_time = f"'{ (scheduled_at + timedelta(minutes=rng.randint(1, 10))).isoformat() }'::timestamptz" if payment_status == "paid" else "NULL"
+                progress_pct = 100 if status == "completed" else 0
+
+                conn.execute(
+                    sa.text(
+                        f"""
+                        INSERT INTO bookings (
+                            id, kol_user_id, customer_user_id,
+                            guest_name, guest_phone, scheduled_at,
+                            pricing_type, quantity, unit_price, total_amount, currency,
+                            payment_qr_url, payment_code, payment_status, status, notes,
+                            payment_proof_url, payment_proof_note, payment_proof_uploaded_at, payment_reviewed_at,
+                            progress_percent
+                        ) VALUES (
+                            '{bid}'::uuid,
+                            '{KOL_ID}'::uuid,
+                            {customer_sql},
+                            '{guest_str}',
+                            '{guest_phone}',
+                            '{scheduled_at.isoformat()}'::timestamptz,
+                            '{pricing_type}',
+                            {quantity},
+                            {unit},
+                            {total},
+                            'VND',
+                            '{qr}',
+                            '{code}',
+                            '{payment_status}',
+                            '{status}',
+                            '{notes_str}',
+                            {proof_url},
+                            {proof_note},
+                            {proof_time},
+                            {review_time},
+                            {progress_pct}
+                        )
+                        ON CONFLICT (id) DO NOTHING
+                        """
+                    )
                 )
-                ON CONFLICT (id) DO NOTHING
-                """
-            )
-        )
 
 
 def downgrade() -> None:
     conn = op.get_bind()
-    booking_list = ", ".join(f"'{bid}'::uuid" for bid in BOOKING_IDS)
-    conn.execute(sa.text(f"DELETE FROM bookings WHERE id IN ({booking_list})"))
+    conn.execute(
+        sa.text(f"DELETE FROM bookings WHERE kol_user_id = '{KOL_ID}'::uuid")
+    )

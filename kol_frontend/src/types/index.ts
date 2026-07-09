@@ -20,6 +20,18 @@ export interface DashboardStats {
   total_bookings: number
   pending_bookings: number
   upcoming_bookings: number
+  collected_revenue?: number
+  unpaid_revenue?: number
+  completed_bookings?: number
+  confirmed_bookings?: number
+  cancelled_bookings?: number
+  proof_submitted_bookings?: number
+  revenue_by_month?: {
+    labels: string[]
+    gross: number[]
+    collected: number[]
+    booking_counts: number[]
+  }
 }
 
 export interface Booking {
@@ -43,6 +55,13 @@ export interface Booking {
   payment_proof_note?: string | null
   payment_proof_uploaded_at?: string | null
   payment_reviewed_at?: string | null
+  source?: string
+  progress_percent?: number
+  progress_note?: string | null
+  extension_count?: number
+  extended_until?: string | null
+  extension_note?: string | null
+  progress_updated_at?: string | null
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
   notes: string | null
   created_at: string
@@ -158,4 +177,34 @@ export interface ProfileUpdatePayload {
   bank_account_number?: string | null
   bank_account_name?: string | null
   layout_structure?: ProfileLayoutV2 | null
+}
+
+export interface KolManualBookingPayload {
+  scheduled_at: string
+  pricing_type: 'match' | 'hourly'
+  quantity: number
+  guest_name: string
+  guest_phone?: string | null
+  guest_zalo?: string | null
+  guest_messenger?: string | null
+  notes?: string | null
+  source?: 'manual' | 'external'
+}
+
+export interface BookingProgressPayload {
+  progress_percent: number
+  progress_note?: string | null
+  extended_until?: string | null
+  extension_note?: string | null
+}
+
+export interface BookingActivityLog {
+  id: string
+  booking_id: string
+  actor_user_id: string | null
+  actor_role: string | null
+  action: string
+  message: string
+  metadata: Record<string, unknown> | null
+  created_at: string
 }

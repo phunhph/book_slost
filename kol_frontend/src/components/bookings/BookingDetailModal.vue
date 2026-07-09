@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { resolveMediaUrl } from '../../services/api'
-import type { Booking } from '../../types'
+import type { Booking, BookingActivityLog } from '../../types'
 import { formatDateTime, formatStatus } from '../../utils/format'
 
 const props = defineProps<{
   booking: Booking | null
+  logs?: BookingActivityLog[]
+  logsLoading?: boolean
   open: boolean
   showActions?: boolean
   busy?: boolean
@@ -15,9 +17,14 @@ const emit = defineEmits<{
   close: []
   changeStatus: [status: string]
   reviewPayment: [action: 'approve' | 'reject', note?: string]
+  updateProgress: [payload: { progress_percent: number; progress_note?: string; extended_until?: string; extension_note?: string }]
 }>()
 
 const reviewNote = ref('')
+const progressPercent = ref(0)
+const progressNote = ref('')
+const extendedUntil = ref('')
+const extensionNote = ref('')
 
 const paymentLabel = computed(() => {
   if (!props.booking) return ''
@@ -48,6 +55,7 @@ const canReviewPayment = computed(
     Boolean(props.booking?.payment_proof_url) &&
     props.booking?.payment_status === 'proof_submitted',
 )
+const progressLabel = computed(() => `${progressPercent.value}%`)
 
 function statusTone(status: string) {
   return (
@@ -68,7 +76,13 @@ watch(
   () => props.open,
   (isOpen) => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
-    if (isOpen) reviewNote.value = ''
+    if (isOpen) {
+      reviewNote.value = ''
+      progressPercent.value = props.booking?.progress_percent ?? 0
+      progressNote.value = props.booking?.progress_note ?? ''
+      extendedUntil.value = props.booking?.extended_until ? props.booking.extended_until.slice(0, 16) : ''
+      extensionNote.value = props.booking?.extension_note ?? ''
+    }
   },
 )
 
@@ -166,6 +180,60 @@ onUnmounted(() => {
               </p>
             </div>
 
+            <div class="rounded-2xl border border-white/8 bg-white/4 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Tiến độ thực hiện</p>
+                <span class="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-white">{{ progressLabel }}</span>
+              </div>
+              <div class="mt-4">
+                <input v-model.number="progressPercent" type="range" min="0" max="100" class="w-full" />
+              </div>
+              <textarea
+                v-model="progressNote"
+                rows="3"
+                maxlength="2000"
+                placeholder="Đã làm tới đâu, còn chờ gì, note nội bộ..."
+                class="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500"
+              />
+              <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Gia hạn đến</label>
+                  <input
+                    v-model="extendedUntil"
+                    type="datetime-local"
+                    class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-xs uppercase tracking-[0.2em] text-slate-400">Ghi chú gia hạn</label>
+                  <input
+                    v-model="extensionNote"
+                    type="text"
+                    maxlength="2000"
+                    placeholder="Khách xin thêm 2 ngày, chờ duyệt..."
+                    class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500"
+                  />
+                </div>
+              </div>
+              <div class="mt-4 flex justify-end">
+                <button
+                  class="btn-primary"
+                  type="button"
+                  :disabled="busy"
+                  @click="
+                    emit('updateProgress', {
+                      progress_percent: progressPercent,
+                      progress_note: progressNote || undefined,
+                      extended_until: extendedUntil || undefined,
+                      extension_note: extensionNote || undefined,
+                    })
+                  "
+                >
+                  Lưu tiến độ
+                </button>
+              </div>
+            </div>
+
             <div v-if="booking.payment_code || booking.payment_qr_url" class="rounded-2xl border border-white/8 bg-white/4 p-4">
               <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Thông tin QR</p>
               <p v-if="booking.payment_code" class="mt-2 text-sm text-slate-200">
@@ -252,8 +320,40 @@ onUnmounted(() => {
 
             <div class="rounded-2xl border border-white/8 bg-white/4 p-4 text-xs text-slate-400">
               <p>Mã booking: {{ booking.id }}</p>
+              <p class="mt-1">Nguồn: {{ booking.source || 'system' }}</p>
+              <p v-if="booking.extension_count" class="mt-1">Số lần gia hạn: {{ booking.extension_count }}</p>
               <p class="mt-1">Tạo lúc: {{ formatDateTime(booking.created_at) }}</p>
               <p class="mt-1">Cập nhật: {{ formatDateTime(booking.updated_at) }}</p>
+            </div>
+
+            <div class="rounded-2xl border border-white/8 bg-white/4 p-4">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Nhật ký hoạt động</p>
+                <span class="text-xs text-slate-500">{{ logs?.length ?? 0 }} mục</span>
+              </div>
+              <p class="mt-2 text-sm text-slate-400">
+                Ghi lại các thao tác quan trọng để dễ dò lại khi có lỗi hoặc phát sinh.
+              </p>
+              <div v-if="logsLoading" class="mt-4 text-sm text-slate-400">Đang tải log...</div>
+              <div v-else-if="!logs?.length" class="mt-4 text-sm text-slate-400">Chưa có log nào.</div>
+              <div v-else class="mt-4 space-y-3">
+                <article
+                  v-for="item in logs"
+                  :key="item.id"
+                  class="rounded-xl border border-white/8 bg-black/10 px-3 py-3"
+                >
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-sm font-medium text-white">{{ item.message }}</p>
+                    <span class="text-xs text-slate-500">{{ formatDateTime(item.created_at) }}</span>
+                  </div>
+                  <p class="mt-1 text-xs uppercase tracking-[0.16em] text-violet-200">
+                    {{ item.actor_role || 'system' }} · {{ item.action }}
+                  </p>
+                  <div v-if="item.metadata" class="mt-2 rounded-lg bg-white/5 px-3 py-2 text-xs text-slate-300">
+                    <pre class="whitespace-pre-wrap break-words">{{ JSON.stringify(item.metadata, null, 2) }}</pre>
+                  </div>
+                </article>
+              </div>
             </div>
           </div>
         </section>

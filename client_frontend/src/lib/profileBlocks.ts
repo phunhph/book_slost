@@ -31,6 +31,15 @@ export function defaultLayoutV2(profile?: Partial<UserProfile>): ProfileLayoutV2
   let order = 0
 
   blocks.push({ id: 'hero', type: 'hero', active: true, order: order++, data: {} })
+  blocks.push({ id: 'social_links', type: 'social_links', active: true, order: order++, data: defaultData('social_links') })
+
+  blocks.push({
+    id: 'contact',
+    type: 'contact',
+    active: Boolean(profile?.phone || profile?.zalo || profile?.messenger),
+    order: order++,
+    data: { phone: profile?.phone, zalo: profile?.zalo, messenger: profile?.messenger },
+  })
 
   if (profile?.bio?.trim()) {
     blocks.push({
@@ -42,23 +51,17 @@ export function defaultLayoutV2(profile?: Partial<UserProfile>): ProfileLayoutV2
     })
   }
 
-  if (profile?.phone || profile?.zalo || profile?.messenger) {
-    blocks.push({
-      id: newId(),
-      type: 'contact',
-      active: true,
-      order: order++,
-      data: { phone: profile.phone, zalo: profile.zalo, messenger: profile.messenger },
-    })
-  }
-
   blocks.push({ id: 'booking', type: 'booking', active: true, order: order++, data: defaultData('booking') })
 
-  for (const type of ['social_links', 'gallery', 'qr_codes'] as BlockType[]) {
+  for (const type of ['gallery', 'qr_codes'] as BlockType[]) {
     blocks.push({ id: newId(), type, active: false, order: order++, data: defaultData(type) })
   }
 
   return { version: 2, blocks }
+}
+
+export function ensureLayoutBlocks(layout: ProfileLayoutV2): ProfileLayoutV2 {
+  return normalizeLayoutV2(layout)
 }
 
 export function migrateLayoutToV2(raw: unknown, profile?: Partial<UserProfile>): ProfileLayoutV2 {
@@ -97,6 +100,19 @@ export function normalizeLayoutV2(raw: ProfileLayoutV2 | unknown): ProfileLayout
 
   if (!blocks.some((block) => block.type === 'hero')) {
     blocks.unshift({ id: 'hero', type: 'hero', active: true, order: 0, data: {} })
+  }
+  if (!blocks.some((block) => block.type === 'social_links')) {
+    blocks.splice(1, 0, { id: 'social_links', type: 'social_links', active: true, order: 1, data: defaultData('social_links') })
+  }
+  if (!blocks.some((block) => block.type === 'contact')) {
+    const insertAt = blocks.findIndex((b) => b.type === 'social_links') + 1
+    blocks.splice(insertAt, 0, {
+      id: newId(),
+      type: 'contact',
+      active: false,
+      order: insertAt,
+      data: defaultData('contact'),
+    })
   }
   if (!blocks.some((block) => block.type === 'booking')) {
     blocks.push({ id: 'booking', type: 'booking', active: true, order: blocks.length, data: defaultData('booking') })
@@ -183,5 +199,8 @@ export const SOCIAL_PLATFORM_LABELS: Record<string, string> = {
   website: 'Website',
   shopee: 'Shopee',
   zalo: 'Zalo',
+  playduo: 'Playduo',
+  playdual: 'Playdual',
+  zpay: 'Zpay',
   other: 'Liên kết',
 }

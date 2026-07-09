@@ -1,7 +1,15 @@
 <template>
-  <div class="rounded-xl border-l-4 bg-white p-5 card-shadow" :class="borderClass">
-    <div class="text-xs font-bold uppercase tracking-wider" :class="textClass">{{ label }}</div>
-    <div class="mt-2 text-2xl font-bold text-slate-800">{{ value }}</div>
+  <div class="rounded-2xl border border-white/10 bg-slate-900/40 backdrop-blur-xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between">
+    <!-- Glowing background accent -->
+    <div 
+      class="absolute top-0 right-0 w-24 h-24 rounded-full blur-[45px] opacity-15"
+      :class="bgAccentClass"
+    />
+    <!-- Accent indicator bar on the left -->
+    <div class="absolute inset-y-0 left-0 w-1 rounded-r-full" :class="bgBarClass" />
+
+    <div class="text-[10px] font-bold uppercase tracking-wider pl-2" :class="textClass">{{ label }}</div>
+    <div class="mt-2 text-2xl font-bold text-white pl-2">{{ value }}</div>
   </div>
 </template>
 
@@ -14,21 +22,30 @@ const props = defineProps<{
   color: "primary" | "success" | "info" | "warning";
 }>();
 
-const borderClass = computed(() => {
+const bgBarClass = computed(() => {
   return {
-    primary: "border-[var(--sb-primary)]",
-    success: "border-emerald-500",
-    info: "border-cyan-500",
-    warning: "border-amber-500"
+    primary: "bg-indigo-500",
+    success: "bg-emerald-500",
+    info: "bg-cyan-500",
+    warning: "bg-amber-500"
+  }[props.color];
+});
+
+const bgAccentClass = computed(() => {
+  return {
+    primary: "bg-indigo-500",
+    success: "bg-emerald-500",
+    info: "bg-cyan-500",
+    warning: "bg-amber-500"
   }[props.color];
 });
 
 const textClass = computed(() => {
   return {
-    primary: "text-[var(--sb-primary)]",
-    success: "text-emerald-600",
-    info: "text-cyan-600",
-    warning: "text-amber-600"
+    primary: "text-indigo-400",
+    success: "text-emerald-400",
+    info: "text-cyan-400",
+    warning: "text-amber-400"
   }[props.color];
 });
 </script>

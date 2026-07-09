@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 from urllib.parse import quote
 from uuid import UUID
@@ -6,8 +7,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.modules.auth.models import User
-from app.modules.booking.models import Booking
-from app.modules.booking.schemas import BookingCreateRequest, KolPublicCard
+from app.modules.booking.models import Booking, BookingActivityLog
+from app.modules.booking.schemas import BookingCreateRequest, KolManualBookingCreateRequest, KolPublicCard
 from app.modules.profile.models import UserProfile
 
 
@@ -55,6 +56,13 @@ def _serialize_booking(booking: Booking) -> dict:
         "payment_proof_note": booking.payment_proof_note,
         "payment_proof_uploaded_at": booking.payment_proof_uploaded_at,
         "payment_reviewed_at": booking.payment_reviewed_at,
+        "source": booking.source,
+        "progress_percent": booking.progress_percent,
+        "progress_note": booking.progress_note,
+        "extension_count": booking.extension_count,
+        "extended_until": booking.extended_until,
+        "extension_note": booking.extension_note,
+        "progress_updated_at": booking.progress_updated_at,
         "status": booking.status,
         "notes": booking.notes,
         "created_at": booking.created_at,
@@ -66,6 +74,39 @@ def _serialize_booking(booking: Booking) -> dict:
         "bank_account_number": kol_profile.bank_account_number if kol_profile else None,
         "bank_account_name": kol_profile.bank_account_name if kol_profile else None,
     }
+
+
+def _serialize_booking_log(item: BookingActivityLog) -> dict:
+    return {
+        "id": item.id,
+        "booking_id": item.booking_id,
+        "actor_user_id": item.actor_user_id,
+        "actor_role": item.actor_role,
+        "action": item.action,
+        "message": item.message,
+        "metadata": json.loads(item.metadata_json) if item.metadata_json else None,
+        "created_at": item.created_at,
+    }
+
+
+def _append_booking_log(
+    db: Session,
+    booking_id: UUID,
+    action: str,
+    message: str,
+    actor: User | None = None,
+    metadata: dict | None = None,
+) -> None:
+    db.add(
+        BookingActivityLog(
+            booking_id=booking_id,
+            actor_user_id=actor.id if actor else None,
+            actor_role=actor.role if actor else None,
+            action=action,
+            message=message,
+            metadata_json=json.dumps(metadata, ensure_ascii=False) if metadata else None,
+        )
+    )
 
 
 def list_public_kols(db: Session) -> list[KolPublicCard]:
@@ -183,6 +224,85 @@ def create_booking(
     short_id = str(booking.id).replace("-", "")[:8].upper()
     booking.payment_code = f"BK{short_id}"
     booking.payment_qr_url = _build_vietqr_url(booking, kol_profile)
+    _append_booking_log(
+        db,
+        booking.id,
+        action="booking_created",
+        message="Tạo booking mới từ luồng đặt lịch.",
+        actor=current_user,
+        metadata={
+            "source": "public" if current_user is None else "customer",
+            "scheduled_at": payload.scheduled_at.isoformat(),
+            "pricing_type": pricing_type,
+            "quantity": quantity,
+        },
+    )
+
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
+def create_manual_booking(
+    db: Session,
+    kol_user_id: UUID,
+    payload: KolManualBookingCreateRequest,
+) -> Booking:
+    kol = db.get(User, kol_user_id)
+    if not kol or kol.role != "kol" or not kol.is_active:
+        raise ValueError("Không tìm thấy KOL.")
+
+    kol_profile = db.scalar(select(UserProfile).where(UserProfile.user_id == kol.id))
+    if not kol_profile:
+        raise ValueError("KOL chưa có hồ sơ.")
+
+    pricing_type = payload.pricing_type or kol_profile.pricing_type or "match"
+    unit_price = kol_profile.price_per_match if pricing_type == "match" else kol_profile.price_per_hour
+    if unit_price <= 0:
+        raise ValueError("Bạn chưa thiết lập giá booking.")
+
+    quantity = payload.quantity or 1
+    total_amount = unit_price * quantity
+
+    booking = Booking(
+        kol_user_id=kol_user_id,
+        customer_user_id=None,
+        guest_name=(payload.guest_name or "").strip() or None,
+        guest_phone=(payload.guest_phone or "").strip() or None,
+        guest_zalo=(payload.guest_zalo or "").strip() or None,
+        guest_messenger=(payload.guest_messenger or "").strip() or None,
+        scheduled_at=payload.scheduled_at,
+        pricing_type=pricing_type,
+        quantity=quantity,
+        unit_price=unit_price,
+        total_amount=total_amount,
+        currency=kol_profile.currency or "VND",
+        payment_status="unpaid",
+        notes=(payload.notes or "").strip() or None,
+        status="pending",
+        source=payload.source,
+        progress_percent=0,
+    )
+    db.add(booking)
+    db.flush()
+
+    short_id = str(booking.id).replace("-", "")[:8].upper()
+    booking.payment_code = f"BK{short_id}"
+    if _has_bank_account(kol_profile):
+        booking.payment_qr_url = _build_vietqr_url(booking, kol_profile)
+    _append_booking_log(
+        db,
+        booking.id,
+        action="manual_booking_created",
+        message="KOL tự tạo booking để quản lý case ngoài hệ thống.",
+        actor=kol,
+        metadata={
+            "source": payload.source,
+            "scheduled_at": payload.scheduled_at.isoformat(),
+            "pricing_type": pricing_type,
+            "quantity": quantity,
+        },
+    )
 
     db.commit()
     db.refresh(booking)
@@ -230,7 +350,17 @@ def update_booking_status(db: Session, booking_id: UUID, status: str, kol_user_i
             "Chưa thể xác nhận đặt lịch. Hãy đối chiếu bill chuyển khoản và duyệt thanh toán trước."
         )
 
+    old_status = booking.status
     booking.status = status
+    actor = db.get(User, kol_user_id) if kol_user_id else None
+    _append_booking_log(
+        db,
+        booking.id,
+        action="status_updated",
+        message=f"Cập nhật trạng thái từ '{old_status}' sang '{status}'.",
+        actor=actor,
+        metadata={"from_status": old_status, "to_status": status},
+    )
     db.commit()
     db.refresh(booking)
     return booking
@@ -258,6 +388,15 @@ def submit_payment_proof(
     booking.payment_proof_uploaded_at = datetime.now(UTC)
     booking.payment_reviewed_at = None
     booking.payment_status = "proof_submitted"
+    actor = db.get(User, customer_user_id)
+    _append_booking_log(
+        db,
+        booking.id,
+        action="payment_proof_submitted",
+        message="Khách đã gửi bill chuyển khoản để đối soát.",
+        actor=actor,
+        metadata={"note": booking.payment_proof_note, "proof_url": proof_url},
+    )
     db.commit()
     db.refresh(booking)
     return booking
@@ -300,9 +439,84 @@ def review_payment_proof(
     else:
         raise ValueError("Hành động duyệt không hợp lệ.")
 
+    actor = db.get(User, kol_user_id)
+    _append_booking_log(
+        db,
+        booking.id,
+        action="payment_reviewed",
+        message="KOL đã duyệt trạng thái thanh toán." if normalized == "approve" else "KOL đã từ chối bill thanh toán.",
+        actor=actor,
+        metadata={"action": normalized, "note": booking.payment_proof_note, "payment_status": booking.payment_status},
+    )
     db.commit()
     db.refresh(booking)
     return booking
+
+
+def update_booking_progress(
+    db: Session,
+    booking_id: UUID,
+    kol_user_id: UUID,
+    progress_percent: int,
+    progress_note: str | None = None,
+    extended_until: datetime | None = None,
+    extension_note: str | None = None,
+) -> Booking:
+    booking = db.get(Booking, booking_id)
+    if not booking:
+        raise ValueError("Không tìm thấy booking.")
+    if booking.kol_user_id != kol_user_id:
+        raise ValueError("Bạn chỉ có thể cập nhật booking của mình.")
+    if booking.status == "cancelled":
+        raise ValueError("Booking đã hủy, không thể cập nhật tiến độ.")
+
+    scheduled_at = booking.scheduled_at
+    if scheduled_at.tzinfo is None:
+        scheduled_at = scheduled_at.replace(tzinfo=UTC)
+    if extended_until and extended_until < scheduled_at:
+        raise ValueError("Ngày gia hạn phải sau lịch hiện tại.")
+
+    booking.progress_percent = progress_percent
+    booking.progress_note = (progress_note or "").strip() or None
+    booking.progress_updated_at = datetime.now(UTC)
+    if extended_until:
+        booking.extension_count = (booking.extension_count or 0) + 1
+        booking.extended_until = extended_until
+        booking.extension_note = (extension_note or "").strip() or None
+    actor = db.get(User, kol_user_id)
+    _append_booking_log(
+        db,
+        booking.id,
+        action="progress_updated",
+        message="KOL đã cập nhật tiến độ booking.",
+        actor=actor,
+        metadata={
+            "progress_percent": booking.progress_percent,
+            "progress_note": booking.progress_note,
+            "extended_until": booking.extended_until.isoformat() if booking.extended_until else None,
+            "extension_count": booking.extension_count,
+            "extension_note": booking.extension_note,
+        },
+    )
+
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
+def list_booking_logs_for_kol(db: Session, booking_id: UUID, kol_user_id: UUID) -> list[BookingActivityLog]:
+    booking = db.get(Booking, booking_id)
+    if not booking:
+        raise ValueError("Không tìm thấy booking.")
+    if booking.kol_user_id != kol_user_id:
+        raise ValueError("Bạn chỉ có thể xem log booking của mình.")
+    return db.scalars(
+        select(BookingActivityLog).where(BookingActivityLog.booking_id == booking_id).order_by(BookingActivityLog.created_at.desc())
+    ).all()
+
+
+def serialize_booking_logs(items: list[BookingActivityLog]) -> list[dict]:
+    return [_serialize_booking_log(item) for item in items]
 
 
 def get_dashboard_stats(db: Session) -> dict:
@@ -480,7 +694,7 @@ def get_dashboard_stats(db: Session) -> dict:
     }
 
 
-def get_kol_dashboard_stats(db: Session, kol_user_id: UUID) -> dict[str, int]:
+def get_kol_dashboard_stats(db: Session, kol_user_id: UUID) -> dict:
     total_bookings = (
         db.scalar(select(func.count()).select_from(Booking).where(Booking.kol_user_id == kol_user_id)) or 0
     )
@@ -506,6 +720,10 @@ def get_kol_dashboard_stats(db: Session, kol_user_id: UUID) -> dict[str, int]:
     )
 
     bookings = db.scalars(select(Booking).where(Booking.kol_user_id == kol_user_id)).all()
+    completed_bookings = sum(1 for b in bookings if b.status == "completed")
+    confirmed_bookings = sum(1 for b in bookings if b.status == "confirmed")
+    cancelled_bookings = sum(1 for b in bookings if b.status == "cancelled")
+    proof_submitted_bookings = sum(1 for b in bookings if b.payment_status == "proof_submitted")
     collected_revenue = sum(
         b.total_amount or 0
         for b in bookings
@@ -517,10 +735,50 @@ def get_kol_dashboard_stats(db: Session, kol_user_id: UUID) -> dict[str, int]:
         if b.status != "cancelled" and not (b.payment_status == "paid" or b.status == "completed")
     )
 
+    now = datetime.now(UTC)
+    current_year = now.year
+    current_month = now.month
+    monthly_labels: list[str] = []
+    monthly_gross: list[int] = []
+    monthly_collected: list[int] = []
+    monthly_booking_counts: list[int] = []
+    for offset in range(11, -1, -1):
+        year = current_year
+        month = current_month - offset
+        while month <= 0:
+            month += 12
+            year -= 1
+        monthly_labels.append(f"{month:02d}/{year}")
+        gross = 0
+        collected = 0
+        count = 0
+        for booking in bookings:
+            scheduled = booking.scheduled_at
+            if scheduled.tzinfo is None:
+                scheduled = scheduled.replace(tzinfo=UTC)
+            if scheduled.year == year and scheduled.month == month and booking.status != "cancelled":
+                gross += booking.total_amount or 0
+                count += 1
+                if booking.payment_status == "paid" or booking.status == "completed":
+                    collected += booking.total_amount or 0
+        monthly_gross.append(gross)
+        monthly_collected.append(collected)
+        monthly_booking_counts.append(count)
+
     return {
         "total_bookings": total_bookings,
         "pending_bookings": pending_bookings,
         "upcoming_bookings": upcoming_bookings,
         "collected_revenue": collected_revenue,
         "unpaid_revenue": unpaid_revenue,
+        "completed_bookings": completed_bookings,
+        "confirmed_bookings": confirmed_bookings,
+        "cancelled_bookings": cancelled_bookings,
+        "proof_submitted_bookings": proof_submitted_bookings,
+        "revenue_by_month": {
+            "labels": monthly_labels,
+            "gross": monthly_gross,
+            "collected": monthly_collected,
+            "booking_counts": monthly_booking_counts,
+        },
     }

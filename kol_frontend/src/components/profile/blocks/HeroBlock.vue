@@ -65,10 +65,36 @@ const hasQuickContact = computed(
       </div>
 
       <div class="min-w-0 flex-1 text-center sm:text-left">
-        <p class="profile-public-eyebrow">Hồ sơ creator</p>
+        <p class="profile-public-eyebrow">Creator profile</p>
         <h1 class="profile-public-title">{{ profile.display_name ?? profile.username ?? 'Creator chưa đặt tên' }}</h1>
         <p class="profile-public-handle">@{{ profile.username ?? 'creator' }}</p>
-        <p v-if="showBio && profile.bio" class="profile-public-bio">{{ profile.bio }}</p>
+        
+        <!-- Pricing info at the top -->
+        <div 
+          v-if="profile.price_per_match || profile.price_per_hour"
+          class="mt-3 flex flex-wrap justify-center sm:justify-start gap-2.5"
+        >
+          <span 
+            v-if="profile.price_per_match"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 backdrop-blur-md"
+          >
+            Theo trận:
+            <strong class="text-indigo-300 font-bold">
+              {{ new Intl.NumberFormat('vi-VN').format(profile.price_per_match) }} {{ profile.currency || 'VND' }}
+            </strong>
+          </span>
+          <span 
+            v-if="profile.price_per_hour"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-slate-200 backdrop-blur-md"
+          >
+            Theo giờ:
+            <strong class="text-indigo-300 font-bold">
+              {{ new Intl.NumberFormat('vi-VN').format(profile.price_per_hour) }} {{ profile.currency || 'VND' }}
+            </strong>
+          </span>
+        </div>
+
+        <p v-if="showBio && profile.bio" class="profile-public-bio profile-public-bio--compact mt-4">{{ profile.bio }}</p>
 
         <div v-if="hasQuickContact" class="profile-public-contacts justify-center sm:justify-start">
           <a v-if="profile.phone" class="profile-public-chip profile-public-chip--accent" :href="`tel:${profile.phone}`">

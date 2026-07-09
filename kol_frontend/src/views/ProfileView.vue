@@ -11,6 +11,7 @@ import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 import BackgroundField from '../components/ui/BackgroundField.vue'
 import ColorField from '../components/ui/ColorField.vue'
+import ProfileConnectionsEditor from '../components/profile/ProfileConnectionsEditor.vue'
 import ProfileLayoutBuilder from '../components/profile/ProfileLayoutBuilder.vue'
 import ProfilePageRenderer from '../components/profile/ProfilePageRenderer.vue'
 import { withResolvedProfileTheme } from '../lib/profileTheme'
@@ -20,14 +21,15 @@ const auth = useAuthStore()
 const toast = useToastStore()
 const loading = ref(true)
 const saving = ref(false)
-const activeTab = ref<'identity' | 'theme' | 'blocks' | 'preview'>('identity')
+const activeTab = ref<'identity' | 'connect' | 'theme' | 'content' | 'preview'>('identity')
 const fieldErrors = reactive<Record<string, string>>({})
 const touched = reactive<Record<string, boolean>>({})
 
 const tabs = [
-  { id: 'identity' as const, label: 'Thông tin', hint: 'Tên, avatar, liên hệ' },
-  { id: 'theme' as const, label: 'Giao diện', hint: 'Màu sắc, nền, font' },
-  { id: 'blocks' as const, label: 'Nội dung trang', hint: 'Block & trang landing' },
+  { id: 'identity' as const, label: 'Hồ sơ', hint: 'Tên, giá, ngân hàng' },
+  { id: 'connect' as const, label: 'Kết nối', hint: 'Liên hệ & MXH' },
+  { id: 'theme' as const, label: 'Giao diện', hint: 'Màu, font, nền' },
+  { id: 'content' as const, label: 'Nội dung', hint: 'Giới thiệu, ảnh, lịch' },
   { id: 'preview' as const, label: 'Xem trước', hint: 'Trang công khai' },
 ]
 
@@ -477,26 +479,6 @@ onMounted(loadProfile)
             <input v-model="form.avatar_url" class="field min-w-0" type="url" placeholder="https://..." />
           </div>
           <div>
-            <label class="mb-2 block text-sm text-slate-300">Điện thoại</label>
-            <input
-              v-model="form.phone"
-              :class="fieldClass('phone')"
-              type="text"
-              placeholder="0901000001"
-              @blur="markTouched('phone')"
-              @input="validateField('phone')"
-            />
-            <p v-if="touched.phone && fieldErrors.phone" class="field-error">{{ fieldErrors.phone }}</p>
-          </div>
-          <div>
-            <label class="mb-2 block text-sm text-slate-300">Zalo</label>
-            <input v-model="form.zalo" class="field" type="text" placeholder="Zalo ID" />
-          </div>
-          <div class="md:col-span-2">
-            <label class="mb-2 block text-sm text-slate-300">Messenger</label>
-            <input v-model="form.messenger" class="field" type="text" placeholder="Facebook / Messenger" />
-          </div>
-          <div>
             <label class="mb-2 block text-sm text-slate-300">Kiểu giá mặc định</label>
             <select v-model="form.pricing_type" class="field">
               <option v-for="option in pricingTypeOptions" :key="option.value" :value="option.value">
@@ -605,6 +587,21 @@ onMounted(loadProfile)
         </div>
       </section>
 
+      <section v-show="activeTab === 'connect'" class="glass-panel page-panel rounded-[2rem]">
+        <p class="profile-form-section__title">Kết nối với khách</p>
+        <p class="mt-2 text-sm text-slate-400">
+          Các mục này hiển thị ngay dưới phần hero — khách thấy kênh liên hệ trước khi cuộn xuống nội dung dài.
+        </p>
+        <div class="mt-5">
+          <ProfileConnectionsEditor
+            v-model="layoutModel"
+            v-model:phone="form.phone"
+            v-model:zalo="form.zalo"
+            v-model:messenger="form.messenger"
+          />
+        </div>
+      </section>
+
       <section v-show="activeTab === 'theme'" class="glass-panel page-panel rounded-[2rem]">
         <p class="profile-form-section__title">Giao diện & màu sắc</p>
         <div class="mt-4 grid gap-5 lg:grid-cols-2 lg:items-start">
@@ -666,15 +663,18 @@ onMounted(loadProfile)
         </div>
       </section>
 
-      <section v-show="activeTab === 'blocks'" class="glass-panel page-panel rounded-[2rem]">
+      <section v-show="activeTab === 'content'" class="glass-panel page-panel rounded-[2rem]">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="profile-form-section__title !mb-0">Nội dung trang</p>
+          <div>
+            <p class="profile-form-section__title !mb-1">Nội dung trang công khai</p>
+            <p class="text-sm text-slate-400">Chia thành từng mục — giới thiệu, thư viện ảnh, QR, form đặt lịch.</p>
+          </div>
           <button class="btn-secondary text-sm" type="button" @click="fillDemoContent">
-            Điền nội dung mẫu
+            Điền mẫu
           </button>
         </div>
         <div class="mt-5">
-          <ProfileLayoutBuilder v-model="layoutModel" />
+          <ProfileLayoutBuilder v-model="layoutModel" mode="content" />
         </div>
       </section>
 
