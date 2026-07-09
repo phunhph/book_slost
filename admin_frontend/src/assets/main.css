@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sb-primary: #4e73df;
+  --sb-primary-dark: #2e59d9;
+  --sb-sidebar: #212529;
+  --sb-sidebar-hover: #2c3136;
+  --sb-bg: #f8f9fc;
+  --sb-card-border: #e3e6f0;
+}
+
+body {
+  margin: 0;
+  font-family: "Nunito", system-ui, sans-serif;
+  background: var(--sb-bg);
+  color: #5a5c69;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.card-shadow {
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}

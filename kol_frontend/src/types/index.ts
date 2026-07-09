@@ -1,0 +1,161 @@
+export interface User {
+  id: string
+  email: string
+  auth_provider: string
+  role: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AuthResponse {
+  access_token: string
+  token_type: string
+  expires_in?: number
+  message: string
+  user: User
+}
+
+export interface DashboardStats {
+  total_bookings: number
+  pending_bookings: number
+  upcoming_bookings: number
+}
+
+export interface Booking {
+  id: string
+  kol_user_id: string
+  customer_user_id: string | null
+  guest_name: string | null
+  guest_phone: string | null
+  guest_zalo: string | null
+  guest_messenger: string | null
+  scheduled_at: string
+  pricing_type?: string
+  quantity?: number
+  unit_price?: number
+  total_amount?: number
+  currency?: string
+  payment_qr_url?: string | null
+  payment_code?: string | null
+  payment_status?: string
+  payment_proof_url?: string | null
+  payment_proof_note?: string | null
+  payment_proof_uploaded_at?: string | null
+  payment_reviewed_at?: string | null
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | string
+  notes: string | null
+  created_at: string
+  updated_at: string
+  kol_display_name: string | null
+  kol_username: string | null
+  customer_email: string | null
+}
+
+export type BlockType =
+  | 'hero'
+  | 'social_links'
+  | 'gallery'
+  | 'qr_codes'
+  | 'about'
+  | 'booking'
+  | 'contact'
+
+export type SocialPlatform =
+  | 'instagram'
+  | 'tiktok'
+  | 'facebook'
+  | 'youtube'
+  | 'twitter'
+  | 'website'
+  | 'shopee'
+  | 'zalo'
+  | 'other'
+
+export interface SocialLinkItem {
+  platform: SocialPlatform | string
+  label?: string | null
+  url: string
+}
+
+export interface GalleryItem {
+  url: string
+  alt?: string | null
+  caption?: string | null
+}
+
+export interface QrCodeItem {
+  label: string
+  image_url: string
+  target_url?: string | null
+}
+
+export interface ProfileBlock {
+  id: string
+  type: BlockType
+  active: boolean
+  order: number
+  data: Record<string, unknown>
+}
+
+export interface ProfileLayoutV2 {
+  version: 2
+  blocks: ProfileBlock[]
+}
+
+export interface UserProfile {
+  user_id: string
+  username: string | null
+  display_name: string | null
+  bio: string | null
+  avatar_url: string | null
+  theme_mode: string
+  font_family: string
+  primary_color: string
+  text_color: string
+  bg_type: string
+  bg_value: string | null
+  avatar_style: string
+  button_style: string
+  phone: string | null
+  zalo: string | null
+  messenger: string | null
+  pricing_type: string
+  price_per_match: number
+  price_per_hour: number
+  currency: string
+  bank_name?: string | null
+  bank_code?: string | null
+  bank_account_number?: string | null
+  bank_account_name?: string | null
+  layout_structure: ProfileLayoutV2 | Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface ProfileUpdatePayload {
+  username?: string | null
+  display_name?: string | null
+  bio?: string | null
+  avatar_url?: string | null
+  theme_mode?: string | null
+  font_family?: string | null
+  primary_color?: string | null
+  text_color?: string | null
+  bg_type?: string | null
+  bg_value?: string | null
+  avatar_style?: string | null
+  button_style?: string | null
+  phone?: string | null
+  zalo?: string | null
+  messenger?: string | null
+  pricing_type?: string | null
+  price_per_match?: number | null
+  price_per_hour?: number | null
+  currency?: string | null
+  bank_name?: string | null
+  bank_code?: string | null
+  bank_account_number?: string | null
+  bank_account_name?: string | null
+  layout_structure?: ProfileLayoutV2 | null
+}

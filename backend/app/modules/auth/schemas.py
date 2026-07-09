@@ -11,6 +11,15 @@ class RegisterLocalRequest(BaseModel):
     display_name: str | None = Field(default=None, max_length=150)
 
 
+class LoginLocalRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+
+class GoogleAuthRequest(BaseModel):
+    id_token: str = Field(min_length=10)
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -23,6 +32,13 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
-class RegisterLocalResponse(BaseModel):
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
     user: UserResponse
+    message: str = "Authenticated successfully."
+
+
+class RegisterLocalResponse(AuthResponse):
     message: str = "User registered successfully."

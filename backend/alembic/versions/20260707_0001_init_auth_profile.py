@@ -5,9 +5,19 @@ Revises: None
 Create Date: 2026-07-07 14:05:00
 """
 
+import json
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+
+DEFAULT_LAYOUT = [
+    {"id": "media_block", "active": True},
+    {"id": "booking_block", "active": True},
+    {"id": "products_block", "active": True},
+    {"id": "affiliate_block", "active": True},
+]
 
 
 revision = "20260707_0001"
@@ -50,9 +60,7 @@ def upgrade() -> None:
         sa.Column(
             "layout_structure",
             postgresql.JSONB(astext_type=sa.Text()),
-            server_default=sa.text(
-                '\'[{"id":"media_block","active":true},{"id":"booking_block","active":true},{"id":"products_block","active":true},{"id":"affiliate_block","active":true}]\'::jsonb'
-            ),
+            server_default=sa.text(f"'{json.dumps(DEFAULT_LAYOUT)}'::jsonb"),
             nullable=False,
         ),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),

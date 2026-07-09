@@ -15,7 +15,32 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "affiliate_booking_core"
 
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    cors_origins: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://localhost:3001,http://127.0.0.1:3001,"
+        "http://localhost:3002,http://127.0.0.1:3002"
+    )
+    # Allow Vite "Network" URLs (e.g. http://192.168.x.x:3002) during local dev.
+    cors_origin_regex: str = (
+        r"https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?"
+    )
+
+    jwt_secret_key: str = "change-me-in-production-use-long-random-string"
+    jwt_algorithm: str = "HS256"
+    # Legacy default (workspace apps). Prefer role-specific TTLs below.
+    jwt_access_token_expire_minutes: int = 60 * 24
+    # Client / customer sessions: 1 hour
+    jwt_client_expire_minutes: int = 60
+    # Admin + KOL workspace sessions: 1 day
+    jwt_workspace_expire_minutes: int = 60 * 24
+
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/auth/callback"
+
+    admin_frontend_url: str = "http://localhost:3000"
+    client_frontend_url: str = "http://localhost:3001"
+    kol_frontend_url: str = "http://localhost:3002"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -35,6 +60,15 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    def frontend_callback_url(self, app_target: str) -> str:
+        if app_target == "client":
+            base = self.client_frontend_url
+        elif app_target == "kol":
+            base = self.kol_frontend_url
+        else:
+            base = self.admin_frontend_url
+        return f"{base.rstrip('/')}/auth/google/callback"
 
 
 @lru_cache

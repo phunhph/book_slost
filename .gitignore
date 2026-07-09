@@ -19,6 +19,10 @@ coverage/
 .env.*
 !.env.example
 
+# uploaded payment bills (keep directory via .gitkeep)
+backend/uploads/payment_proofs/*
+!backend/uploads/payment_proofs/.gitkeep
+
 # secrets and local overrides
 *.key
 *.pem
@@ -29,6 +33,7 @@ coverage/
 secrets.*
 secret.*
 credentials.*
+client_secret*.json
 *.db
 *.sqlite
 *.sqlite3

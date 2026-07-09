@@ -1,0 +1,19 @@
+{
+  "name": "book-slost",
+  "private": true,
+  "scripts": {
+    "install:client": "npm install --prefix client_frontend",
+    "install:kol": "npm install --prefix kol_frontend",
+    "install:admin": "npm install --prefix admin_frontend",
+    "install:frontends": "npm run install:client && npm run install:kol",
+    "install:all": "npm run install:admin && npm run install:client && npm run install:kol",
+    "dev:client": "npm run dev --prefix client_frontend",
+    "dev:kol": "npm run dev --prefix kol_frontend",
+    "dev:admin": "npm run dev --prefix admin_frontend",
+    "dev": "concurrently -k -n client,kol -c cyan,magenta \"npm run dev:client\" \"npm run dev:kol\"",
+    "dev:all": "concurrently -k -n admin,client,kol -c yellow,cyan,magenta \"npm run dev:admin\" \"npm run dev:client\" \"npm run dev:kol\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
