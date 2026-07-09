@@ -1,0 +1,15 @@
+[Unit]
+Description=book_slost FastAPI
+After=network.target postgresql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/xuong/book_slost/backend
+Environment=PATH=/var/www/xuong/book_slost/backend/.venv/bin
+ExecStart=/var/www/xuong/book_slost/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
