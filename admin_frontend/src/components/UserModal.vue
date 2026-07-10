@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import type { UserRow, PlatformRow } from "@/types";
+import type { UserRow } from "@/types";
 import { fetchAdminPlatforms } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
 

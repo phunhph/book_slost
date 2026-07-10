@@ -10,7 +10,12 @@ const layout = defineModel<ProfileLayoutV2>({ required: true })
 const phone = defineModel<string | null>('phone', { default: null })
 const zalo = defineModel<string | null>('zalo', { default: null })
 const messenger = defineModel<string | null>('messenger', { default: null })
-const contactLinks = defineModel<Array<{ platform: string; value: string; label?: string }>>('contactLinks', { default: () => [] })
+const contactLinks = defineModel<Array<{ platform: string; value: string; label?: string }> | null | undefined>('contactLinks', { default: () => [] })
+
+const safeContactLinks = computed({
+  get: () => contactLinks.value || [],
+  set: (val) => { contactLinks.value = val }
+})
 
 const contactOptions = ref([
   { value: 'phone', label: 'Điện thoại' },
@@ -69,7 +74,7 @@ function commitContactFields() {
   let zaloVal: string | null = null
   let messengerVal: string | null = null
   
-  for (const link of contactLinks.value) {
+  for (const link of safeContactLinks.value) {
     if (link.platform === 'phone' && !phoneVal) {
       phoneVal = link.value
     } else if (link.platform === 'zalo' && !zaloVal) {
@@ -87,7 +92,7 @@ function commitContactFields() {
     version: 2,
     blocks: normalized.value.blocks.map((block) => {
       if (block.type !== 'contact') return block
-      const hasValue = contactLinks.value.some(l => l.value.trim() !== '')
+      const hasValue = safeContactLinks.value.some(l => l.value.trim() !== '')
       return {
         ...block,
         active: hasValue,
@@ -99,12 +104,12 @@ function commitContactFields() {
 
 function addContactLink() {
   const defaultPlat = contactOptions.value[0]?.value || 'phone'
-  contactLinks.value.push({ platform: defaultPlat, value: '', label: '' })
+  safeContactLinks.value.push({ platform: defaultPlat, value: '', label: '' })
   commitContactFields()
 }
 
 function removeContactLink(index: number) {
-  contactLinks.value.splice(index, 1)
+  safeContactLinks.value.splice(index, 1)
   commitContactFields()
 }
 
@@ -137,13 +142,13 @@ commitContactFields()
       </div>
 
       <div
-        v-if="!contactLinks.length"
+        v-if="!safeContactLinks.length"
         class="mt-4 rounded-xl border border-dashed border-white/10 px-4 py-8 text-center text-sm text-slate-400"
       >
         Chưa có kênh liên hệ trực tiếp nào. Thêm số điện thoại hoặc mạng xã hội.
       </div>
 
-      <div v-for="(item, index) in contactLinks" :key="index" class="block-editor-item mt-4">
+      <div v-for="(item, index) in safeContactLinks" :key="index" class="block-editor-item mt-4">
         <div class="grid gap-3 md:grid-cols-3">
           <div>
             <label class="mb-2 block text-xs uppercase tracking-wide text-slate-400">Nền tảng</label>
