@@ -98,6 +98,11 @@ select.field {
   padding-right: 2.5rem;
 }
 
+select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
 .block-editor-item {
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);

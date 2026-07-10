@@ -140,3 +140,8 @@ export async function updateProfileByUser(userId: string, payload: ProfileUpdate
   const { data } = await api.put<UserProfile>(`/profiles/by-user/${userId}`, payload)
   return data
 }
+
+export async function getPublicPlatforms() {
+  const { data } = await api.get<Array<{ id: string; key: string; label: string; category: string; is_active: boolean }>>('/profiles/platforms')
+  return data
+}

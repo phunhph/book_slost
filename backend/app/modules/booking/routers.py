@@ -9,7 +9,13 @@ from app.core.uploads import save_payment_proof
 from app.modules.auth.deps import get_optional_user
 from app.modules.auth.models import User
 from app.modules.auth.role_deps import require_admin, require_customer, require_kol
-from app.modules.auth.schemas import UserResponse
+from app.modules.auth.schemas import (
+    UserResponse,
+    AdminUserResponse,
+    AdminUserCreateRequest,
+    AdminUserUpdateRequest,
+)
+from app.modules.auth.services import hash_password
 from app.modules.booking.schemas import (
     BookingActivityLogResponse,
     BookingCreateRequest,
@@ -39,6 +45,12 @@ from app.modules.booking.services import (
     update_booking_status,
 )
 from app.modules.profile.models import UserProfile
+from app.modules.profile.services import ensure_profile_layout_v2
+from app.modules.profile.schemas import (
+    SocialPlatformResponse,
+    SocialPlatformCreateRequest,
+    SocialPlatformUpdateRequest,
+)
 
 
 router = APIRouter(tags=["bookings"])
@@ -74,17 +86,310 @@ def admin_dashboard(_: User = Depends(require_admin), db: Session = Depends(get_
     return get_dashboard_stats(db)
 
 
-@admin_router.get("/users", response_model=list[UserResponse])
+def sync_profile_contacts(profile: UserProfile, contact_links: list[dict], phone: str | None = None):
+    profile.contact_links = contact_links
+    phone_val = phone
+    zalo_val = None
+    messenger_val = None
+    for link in contact_links:
+        plat = link.get("platform")
+        val = link.get("value")
+        if plat == "phone" and not phone_val:
+            phone_val = val
+        elif plat == "zalo":
+            zalo_val = val
+        elif plat == "messenger":
+            messenger_val = val
+    profile.phone = phone_val
+    profile.zalo = zalo_val
+    profile.messenger = messenger_val
+
+
+def get_profile_social_links(profile: UserProfile | None) -> list[dict]:
+    if not profile or not profile.layout_structure:
+        return []
+    layout = profile.layout_structure
+    if not isinstance(layout, dict) or "blocks" not in layout:
+        return []
+    for block in layout["blocks"]:
+        if block.get("type") == "social_links":
+            return block.get("data", {}).get("items", [])
+    return []
+
+
+def sync_profile_social_links(profile: UserProfile, social_links: list[dict]):
+    ensure_profile_layout_v2(profile)
+    layout = profile.layout_structure
+    if not isinstance(layout, dict) or "blocks" not in layout:
+        return
+    for block in layout["blocks"]:
+        if block.get("type") == "social_links":
+            if "data" not in block or not isinstance(block["data"], dict):
+                block["data"] = {}
+            block["data"]["items"] = social_links
+            break
+    from sqlalchemy.orm.attributes import flag_modified
+    flag_modified(profile, "layout_structure")
+
+
+@admin_router.get("/users", response_model=list[AdminUserResponse])
 def admin_list_users(
     role: str | None = None,
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
-) -> list[UserResponse]:
-    stmt = select(User).order_by(User.created_at.desc())
+) -> list[AdminUserResponse]:
+    stmt = (
+        select(User)
+        .options(joinedload(User.profile))
+        .order_by(User.created_at.desc())
+    )
     if role:
         stmt = stmt.where(User.role == role)
     users = db.scalars(stmt).all()
-    return [UserResponse.model_validate(user) for user in users]
+    
+    result = []
+    for u in users:
+        result.append(
+            AdminUserResponse(
+                id=u.id,
+                email=u.email,
+                role=u.role,
+                is_active=u.is_active,
+                created_at=u.created_at,
+                updated_at=u.updated_at,
+                display_name=u.profile.display_name if u.profile else None,
+                username=u.profile.username if u.profile else None,
+                phone=u.profile.phone if u.profile else None,
+                contact_links=u.profile.contact_links if u.profile else [],
+                social_links=get_profile_social_links(u.profile),
+            )
+        )
+    return result
+
+
+@admin_router.post("/users", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED)
+def admin_create_user(
+    payload: AdminUserCreateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AdminUserResponse:
+    existing_user = db.scalar(select(User).where(User.email == payload.email))
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists.")
+
+    if payload.username:
+        existing_profile = db.scalar(select(UserProfile).where(UserProfile.username == payload.username))
+        if existing_profile:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists.")
+
+    user = User(
+        email=payload.email,
+        password_hash=hash_password(payload.password),
+        auth_provider="local",
+        role=payload.role,
+        is_active=payload.is_active,
+    )
+    profile = UserProfile(
+        user=user,
+        username=payload.username,
+        display_name=payload.display_name,
+    )
+    sync_profile_contacts(profile, payload.contact_links, payload.phone)
+    sync_profile_social_links(profile, payload.social_links)
+
+    try:
+        db.add(user)
+        db.add(profile)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    db.refresh(user)
+    return AdminUserResponse(
+        id=user.id,
+        email=user.email,
+        role=user.role,
+        is_active=user.is_active,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+        display_name=profile.display_name,
+        username=profile.username,
+        phone=profile.phone,
+        contact_links=profile.contact_links,
+        social_links=get_profile_social_links(profile),
+    )
+
+
+@admin_router.put("/users/{user_id}", response_model=AdminUserResponse)
+def admin_update_user(
+    user_id: UUID,
+    payload: AdminUserUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> AdminUserResponse:
+    user = db.scalar(select(User).options(joinedload(User.profile)).where(User.id == user_id))
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    if payload.email and payload.email != user.email:
+        existing_user = db.scalar(select(User).where(User.email == payload.email))
+        if existing_user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists.")
+
+    if payload.username and user.profile and payload.username != user.profile.username:
+        existing_profile = db.scalar(select(UserProfile).where(UserProfile.username == payload.username))
+        if existing_profile:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists.")
+
+    if payload.email is not None:
+        user.email = payload.email
+    if payload.is_active is not None:
+        user.is_active = payload.is_active
+    if payload.role is not None:
+        user.role = payload.role
+    if payload.password is not None:
+        user.password_hash = hash_password(payload.password)
+
+    if not user.profile:
+        user.profile = UserProfile(user_id=user.id)
+
+    if payload.display_name is not None:
+        user.profile.display_name = payload.display_name
+    if payload.username is not None:
+        user.profile.username = payload.username
+
+    if payload.contact_links is not None:
+        sync_profile_contacts(user.profile, payload.contact_links, payload.phone)
+    elif payload.phone is not None:
+        user.profile.phone = payload.phone
+
+    if payload.social_links is not None:
+        sync_profile_social_links(user.profile, payload.social_links)
+
+    try:
+        db.add(user)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    db.refresh(user)
+    return AdminUserResponse(
+        id=user.id,
+        email=user.email,
+        role=user.role,
+        is_active=user.is_active,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+        display_name=user.profile.display_name,
+        username=user.profile.username,
+        phone=user.profile.phone,
+        contact_links=user.profile.contact_links,
+        social_links=get_profile_social_links(user.profile),
+    )
+
+
+@admin_router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def admin_delete_user(
+    user_id: UUID,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.scalar(select(User).where(User.id == user_id))
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    try:
+        db.delete(user)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@admin_router.get("/platforms", response_model=list[SocialPlatformResponse])
+def admin_list_platforms(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> list[SocialPlatformResponse]:
+    from app.modules.profile.models import SocialPlatform
+    stmt = select(SocialPlatform).order_by(SocialPlatform.category.desc(), SocialPlatform.label.asc())
+    return db.scalars(stmt).all()
+
+
+@admin_router.post("/platforms", response_model=SocialPlatformResponse, status_code=status.HTTP_201_CREATED)
+def admin_create_platform(
+    payload: SocialPlatformCreateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> SocialPlatformResponse:
+    from app.modules.profile.models import SocialPlatform
+    existing = db.scalar(select(SocialPlatform).where(SocialPlatform.key == payload.key))
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Platform key already exists.")
+
+    platform = SocialPlatform(**payload.model_dump())
+    try:
+        db.add(platform)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    db.refresh(platform)
+    return platform
+
+
+@admin_router.put("/platforms/{platform_id}", response_model=SocialPlatformResponse)
+def admin_update_platform(
+    platform_id: UUID,
+    payload: SocialPlatformUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> SocialPlatformResponse:
+    from app.modules.profile.models import SocialPlatform
+    platform = db.scalar(select(SocialPlatform).where(SocialPlatform.id == platform_id))
+    if not platform:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Platform not found.")
+
+    updates = payload.model_dump(exclude_unset=True)
+    if "key" in updates and updates["key"] != platform.key:
+        existing = db.scalar(select(SocialPlatform).where(SocialPlatform.key == updates["key"]))
+        if existing:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Platform key already exists.")
+
+    for k, v in updates.items():
+        setattr(platform, k, v)
+
+    try:
+        db.add(platform)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    db.refresh(platform)
+    return platform
+
+
+@admin_router.delete("/platforms/{platform_id}", status_code=status.HTTP_204_NO_CONTENT)
+def admin_delete_platform(
+    platform_id: UUID,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    from app.modules.profile.models import SocialPlatform
+    platform = db.scalar(select(SocialPlatform).where(SocialPlatform.id == platform_id))
+    if not platform:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Platform not found.")
+
+    try:
+        db.delete(platform)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @admin_router.get("/kols")

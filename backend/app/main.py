@@ -43,6 +43,44 @@ app.include_router(kol_router, prefix=settings.api_prefix)
 app.include_router(profile_router, prefix=settings.api_prefix)
 
 
+@app.on_event("startup")
+def seed_default_platforms():
+    from app.core.database import SessionLocal
+    from app.modules.profile.models import SocialPlatform
+    from sqlalchemy import select
+
+    db = SessionLocal()
+    try:
+        stmt = select(SocialPlatform)
+        exists = db.scalars(stmt).first()
+        if not exists:
+            defaults = [
+                {"key": "phone", "label": "Điện thoại", "category": "contact"},
+                {"key": "zalo", "label": "Zalo", "category": "contact"},
+                {"key": "messenger", "label": "Facebook Messenger", "category": "contact"},
+                {"key": "telegram", "label": "Telegram", "category": "contact"},
+                {"key": "viber", "label": "Viber", "category": "contact"},
+                {"key": "instagram", "label": "Instagram", "category": "social"},
+                {"key": "tiktok", "label": "TikTok", "category": "social"},
+                {"key": "facebook", "label": "Facebook", "category": "social"},
+                {"key": "youtube", "label": "YouTube", "category": "social"},
+                {"key": "twitter", "label": "X / Twitter", "category": "social"},
+                {"key": "shopee", "label": "Shopee", "category": "social"},
+                {"key": "playduo", "label": "Playduo", "category": "social"},
+                {"key": "playdual", "label": "Playdual", "category": "social"},
+                {"key": "zpay", "label": "Zpay", "category": "social"},
+                {"key": "website", "label": "Website", "category": "social"},
+                {"key": "other", "label": "Liên kết khác", "category": "social"},
+            ]
+            for item in defaults:
+                db.add(SocialPlatform(**item))
+            db.commit()
+    except Exception as exc:
+        print(f"Error seeding platforms: {exc}")
+    finally:
+        db.close()
+
+
 @app.get("/health", tags=["health"])
 def health_check() -> dict[str, str]:
     return {"status": "ok"}

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func, Boolean
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -48,6 +48,7 @@ class UserProfile(Base):
     bank_account_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
     bank_account_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     layout_structure: Mapped[list[dict]] = mapped_column(JSONB, default=lambda: DEFAULT_LAYOUT.copy(), nullable=False)
+    contact_links: Mapped[list[dict]] = mapped_column(JSONB, default=list, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -56,3 +57,20 @@ class UserProfile(Base):
     )
 
     user = relationship("User", back_populates="profile")
+
+
+class SocialPlatform(Base):
+    __tablename__ = "social_platforms"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    key: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    label: Mapped[str] = mapped_column(String(100), nullable=False)
+    category: Mapped[str] = mapped_column(String(50), default="social", nullable=False)  # "contact" or "social"
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    icon: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

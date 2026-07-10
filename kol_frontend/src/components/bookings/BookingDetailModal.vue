@@ -55,6 +55,10 @@ const canReviewPayment = computed(
     Boolean(props.booking?.payment_proof_url) &&
     props.booking?.payment_status === 'proof_submitted',
 )
+/** Booking đã khoá hoàn toàn – không được thao tác thêm */
+const isLocked = computed(() =>
+  props.booking?.status === 'completed' || props.booking?.status === 'cancelled',
+)
 const progressLabel = computed(() => `${progressPercent.value}%`)
 
 function statusTone(status: string) {
@@ -292,30 +296,59 @@ onUnmounted(() => {
               </div>
             </div>
 
+            <!-- Status Actions -->
             <div v-if="showActions" class="rounded-2xl border border-white/8 bg-white/4 p-4">
               <p class="text-[11px] uppercase tracking-[0.2em] text-slate-400">Cập nhật trạng thái</p>
-              <p v-if="!canConfirm" class="mt-2 text-xs text-amber-200">
-                Chỉ xác nhận sau khi đã duyệt bill chuyển khoản khớp.
-              </p>
-              <div class="mt-3 grid grid-cols-2 gap-2">
-                <button
-                  class="btn-secondary"
-                  type="button"
-                  :disabled="busy || !canConfirm"
-                  @click="emit('changeStatus', 'confirmed')"
-                >
-                  Xác nhận
-                </button>
-                <button class="btn-secondary" type="button" :disabled="busy" @click="emit('changeStatus', 'completed')">
-                  Hoàn thành
-                </button>
-                <button class="btn-secondary" type="button" :disabled="busy" @click="emit('changeStatus', 'pending')">
-                  Chờ xử lý
-                </button>
-                <button class="btn-secondary" type="button" :disabled="busy" @click="emit('changeStatus', 'cancelled')">
-                  Hủy
-                </button>
+
+              <!-- Locked banner -->
+              <div
+                v-if="isLocked"
+                class="mt-3 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"
+              >
+                <span class="text-base">{{ booking?.status === 'completed' ? '✅' : '⛔' }}</span>
+                <p class="text-xs text-slate-300">
+                  Booking đã <strong class="text-white">{{ booking?.status === 'completed' ? 'hoàn thành' : 'bị huỷ' }}</strong> —
+                  không thể thay đổi thêm.
+                </p>
               </div>
+
+              <!-- Active action buttons -->
+              <template v-else>
+                <p v-if="!canConfirm" class="mt-2 text-xs text-amber-200">
+                  Chỉ xác nhận sau khi đã duyệt bill chuyển khoản khớp.
+                </p>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                  <!-- pending → confirmed -->
+                  <button
+                    v-if="booking?.status === 'pending'"
+                    class="btn-secondary"
+                    type="button"
+                    :disabled="busy || !canConfirm"
+                    @click="emit('changeStatus', 'confirmed')"
+                  >
+                    Xác nhận
+                  </button>
+                  <!-- confirmed → completed -->
+                  <button
+                    v-if="booking?.status === 'confirmed'"
+                    class="btn-secondary"
+                    type="button"
+                    :disabled="busy"
+                    @click="emit('changeStatus', 'completed')"
+                  >
+                    Hoàn thành
+                  </button>
+                  <!-- any active → cancelled -->
+                  <button
+                    class="btn-secondary col-span-2 border-rose-500/20 text-rose-300 hover:bg-rose-500/10"
+                    type="button"
+                    :disabled="busy"
+                    @click="emit('changeStatus', 'cancelled')"
+                  >
+                    Huỷ booking
+                  </button>
+                </div>
+              </template>
             </div>
 
             <div class="rounded-2xl border border-white/8 bg-white/4 p-4 text-xs text-slate-400">
