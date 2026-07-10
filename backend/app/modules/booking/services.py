@@ -338,6 +338,17 @@ def list_bookings_for_customer(db: Session, customer_user_id: UUID) -> list[dict
     return [_serialize_booking(booking) for booking in bookings]
 
 
+# ─── Bảng chuyển trạng thái hợp lệ ────────────────────────────────────────────
+# Mỗi trạng thái hiện tại chỉ được phép chuyển sang các trạng thái trong danh sách tương ứng.
+# Mọi chuyển ngược chiều đều bị từ chối.
+VALID_STATUS_TRANSITIONS: dict[str, set[str]] = {
+    "pending":   {"confirmed", "cancelled"},
+    "confirmed": {"completed", "cancelled"},
+    "completed": set(),            # Đã hoàn thành – không được sửa đổi
+    "cancelled": set(),            # Đã huỷ – không được sửa đổi
+}
+
+
 def update_booking_status(db: Session, booking_id: UUID, status: str, kol_user_id: UUID | None = None) -> Booking:
     booking = db.get(Booking, booking_id)
     if not booking:
@@ -345,12 +356,28 @@ def update_booking_status(db: Session, booking_id: UUID, status: str, kol_user_i
     if kol_user_id and booking.kol_user_id != kol_user_id:
         raise ValueError("Bạn chỉ có thể cập nhật booking của mình.")
 
+    old_status = booking.status
+
+    # Kiểm tra trạng thái khoá – không thể sửa đổi booking đã hoàn thành hoặc đã huỷ
+    if old_status == "completed":
+        raise ValueError("Booking đã hoàn thành, không thể thay đổi trạng thái.")
+    if old_status == "cancelled":
+        raise ValueError("Booking đã bị huỷ, không thể thay đổi trạng thái.")
+
+    # Kiểm tra chiều chuyển trạng thái hợp lệ
+    allowed = VALID_STATUS_TRANSITIONS.get(old_status, set())
+    if status not in allowed:
+        raise ValueError(
+            f"Không thể chuyển trạng thái từ '{old_status}' sang '{status}'. "
+            f"Các trạng thái được phép: {', '.join(sorted(allowed)) or 'không có'}."
+        )
+
+    # Xác nhận chỉ được phép khi đã thanh toán
     if status == "confirmed" and booking.payment_status != "paid":
         raise ValueError(
             "Chưa thể xác nhận đặt lịch. Hãy đối chiếu bill chuyển khoản và duyệt thanh toán trước."
         )
 
-    old_status = booking.status
     booking.status = status
     actor = db.get(User, kol_user_id) if kol_user_id else None
     _append_booking_log(
@@ -378,6 +405,8 @@ def submit_payment_proof(
         raise ValueError("Không tìm thấy booking.")
     if booking.customer_user_id != customer_user_id:
         raise ValueError("Bạn chỉ có thể gửi bill cho booking của mình.")
+    if booking.status == "completed":
+        raise ValueError("Booking đã hoàn thành, không thể thay đổi thanh toán.")
     if booking.status == "cancelled":
         raise ValueError("Booking đã hủy, không thể gửi bill.")
     if booking.payment_status == "paid":
@@ -414,6 +443,13 @@ def review_payment_proof(
         raise ValueError("Không tìm thấy booking.")
     if booking.kol_user_id != kol_user_id:
         raise ValueError("Bạn chỉ có thể duyệt thanh toán booking của mình.")
+
+    # Booking đã khoá – không thể duyệt thêm
+    if booking.status == "completed":
+        raise ValueError("Booking đã hoàn thành, không thể thay đổi trạng thái thanh toán.")
+    if booking.status == "cancelled":
+        raise ValueError("Booking đã bị huỷ, không thể duyệt thanh toán.")
+
     if not booking.payment_proof_url:
         raise ValueError("Khách chưa gửi bill chuyển khoản.")
     if booking.payment_status not in {"proof_submitted", "paid", "unpaid"}:
@@ -427,15 +463,19 @@ def review_payment_proof(
         booking.payment_reviewed_at = datetime.now(UTC)
         if review_note:
             booking.payment_proof_note = review_note
-        # Auto-confirm schedule after matching payment proof
+        # Tự động xác nhận lịch khi duyệt bill thành công (nếu còn đang pending)
         if booking.status == "pending":
             booking.status = "confirmed"
     elif normalized == "reject":
+        # Không được phép từ chối nếu bill đã được duyệt (paid)
+        if booking.payment_status == "paid":
+            raise ValueError(
+                "Thanh toán đã được xác nhận, không thể từ chối bill sau khi đã duyệt."
+            )
         booking.payment_status = "unpaid"
         booking.payment_reviewed_at = datetime.now(UTC)
         booking.payment_proof_note = review_note or "Bill không khớp. Vui lòng gửi lại biên lai đúng."
-        if booking.status == "confirmed":
-            booking.status = "pending"
+        # KHÔNG tự động rollback booking.status vì quy tắc one-way transition
     else:
         raise ValueError("Hành động duyệt không hợp lệ.")
 
@@ -467,6 +507,8 @@ def update_booking_progress(
         raise ValueError("Không tìm thấy booking.")
     if booking.kol_user_id != kol_user_id:
         raise ValueError("Bạn chỉ có thể cập nhật booking của mình.")
+    if booking.status == "completed":
+        raise ValueError("Booking đã hoàn thành, không thể chỉnh sửa thêm.")
     if booking.status == "cancelled":
         raise ValueError("Booking đã hủy, không thể cập nhật tiến độ.")
 

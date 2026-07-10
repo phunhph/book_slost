@@ -148,6 +148,7 @@ export interface UserProfile {
   bank_account_number?: string | null
   bank_account_name?: string | null
   layout_structure: ProfileLayoutV2 | Record<string, unknown>
+  contact_links?: Array<{ platform: string; value: string; label?: string }>
   created_at: string
   updated_at: string
 }
@@ -177,6 +178,7 @@ export interface ProfileUpdatePayload {
   bank_account_number?: string | null
   bank_account_name?: string | null
   layout_structure?: ProfileLayoutV2 | null
+  contact_links?: Array<{ platform: string; value: string; label?: string }> | null
 }
 
 export interface KolManualBookingPayload {

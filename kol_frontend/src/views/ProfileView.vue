@@ -48,6 +48,7 @@ const form = reactive<ProfileUpdatePayload>({
   phone: null,
   zalo: null,
   messenger: null,
+  contact_links: [],
   pricing_type: 'match',
   price_per_match: 150000,
   price_per_hour: 100000,
@@ -405,6 +406,7 @@ function applyProfile(profile: UserProfile) {
   form.phone = profile.phone
   form.zalo = profile.zalo
   form.messenger = profile.messenger
+  form.contact_links = profile.contact_links || []
   form.pricing_type = profile.pricing_type || 'match'
   form.price_per_match = profile.price_per_match ?? 0
   form.price_per_hour = profile.price_per_hour ?? 0
@@ -427,6 +429,7 @@ function buildSavePayload(): ProfileUpdatePayload {
     bank_name: bankNameFromCode(form.bank_code) || (form.bank_name || '').trim() || null,
     bank_account_number: (form.bank_account_number || '').replace(/\s+/g, '') || null,
     bank_account_name: (form.bank_account_name || '').trim().toUpperCase() || null,
+    contact_links: form.contact_links || [],
   }
 
   const scalarFields = [
@@ -722,6 +725,7 @@ onMounted(loadProfile)
             v-model:phone="form.phone"
             v-model:zalo="form.zalo"
             v-model:messenger="form.messenger"
+            v-model:contactLinks="form.contact_links"
           />
         </div>
       </section>

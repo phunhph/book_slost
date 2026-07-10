@@ -151,9 +151,6 @@ def test_update_booking_status_ownership(
         current_user=None,
     )
 
-    updated = update_booking_status(db_session, booking.id, "cancelled", kol_user_id=seed_users["kol"].id)
-    assert updated.status == "cancelled"
-
     with pytest.raises(ValueError, match="duyệt thanh toán|bill"):
         update_booking_status(db_session, booking.id, "confirmed", kol_user_id=seed_users["kol"].id)
 
@@ -169,6 +166,9 @@ def test_update_booking_status_ownership(
             "completed",
             kol_user_id=UUID("99999999-9999-9999-9999-999999999999"),
         )
+
+    updated = update_booking_status(db_session, booking.id, "cancelled", kol_user_id=seed_users["kol"].id)
+    assert updated.status == "cancelled"
 
 
 def test_dashboard_stats_counts(db_session: Session, seed_users: dict[str, User], future_schedule: datetime) -> None:

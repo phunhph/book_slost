@@ -94,6 +94,7 @@ const bookingBlock = computed(() => visibleBlocks.value.find((block) => block.ty
         :phone="contactData.phone"
         :zalo="contactData.zalo"
         :messenger="contactData.messenger"
+        :contact-links="displayProfile.contact_links ?? undefined"
       />
 
       <div v-if="contentBlocks.length" class="profile-content-stack">

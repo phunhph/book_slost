@@ -89,8 +89,8 @@ watch(sidebarOpen, (open) => {
 
 const navItems = [
   { to: "/dashboard", label: "Tổng quan", icon: "📊" },
-  { to: "/kols", label: "Danh sách KOL", icon: "⭐" },
-  { to: "/customers", label: "Khách hàng", icon: "👥" },
+  { to: "/users", label: "Tài khoản", icon: "👥" },
+  { to: "/platforms", label: "Nền tảng", icon: "🔗" },
   { to: "/bookings", label: "Booking", icon: "📅" }
 ];
 

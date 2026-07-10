@@ -50,6 +50,20 @@ export interface DashboardStats {
   top_kols_by_revenue?: TopKolRevenue[];
 }
 
+export interface UserRow {
+  id: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  display_name: string | null;
+  username: string | null;
+  phone: string | null;
+  contact_links: Array<{ platform: string; value: string; label?: string }>;
+  social_links: Array<{ platform: string; url: string; label?: string }>;
+}
+
 export interface KolRow {
   id: string;
   email: string;
@@ -90,4 +104,15 @@ export interface BookingRow {
   kol_display_name: string | null;
   kol_username: string | null;
   customer_email: string | null;
+}
+
+export interface PlatformRow {
+  id: string;
+  key: string;
+  label: string;
+  category: "contact" | "social";
+  is_active: boolean;
+  icon: string | null;
+  created_at: string;
+  updated_at: string;
 }

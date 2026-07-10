@@ -37,6 +37,7 @@ class UserProfileUpdateRequest(BaseModel):
     bank_account_number: str | None = Field(default=None, max_length=50)
     bank_account_name: str | None = Field(default=None, max_length=150)
     layout_structure: dict[str, Any] | None = None
+    contact_links: list[dict] | None = None
 
     @field_validator("theme_mode")
     @classmethod
@@ -102,5 +103,35 @@ class UserProfileResponse(BaseModel):
     bank_account_number: str | None = None
     bank_account_name: str | None = None
     layout_structure: dict[str, Any]
+    contact_links: list[dict] = []
     created_at: datetime
     updated_at: datetime
+
+
+class SocialPlatformResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    key: str
+    label: str
+    category: str
+    is_active: bool
+    icon: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class SocialPlatformCreateRequest(BaseModel):
+    key: str = Field(min_length=2, max_length=50, pattern="^[a-z0-9_]+$")
+    label: str = Field(min_length=2, max_length=100)
+    category: str = Field(pattern="^(contact|social)$")
+    is_active: bool = True
+    icon: str | None = None
+
+
+class SocialPlatformUpdateRequest(BaseModel):
+    key: str | None = Field(default=None, min_length=2, max_length=50, pattern="^[a-z0-9_]+$")
+    label: str | None = Field(default=None, min_length=2, max_length=100)
+    category: str | None = Field(default=None, pattern="^(contact|social)$")
+    is_active: bool | None = None
+    icon: str | None = None

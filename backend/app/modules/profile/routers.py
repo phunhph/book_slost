@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.modules.auth.deps import get_current_user
 from app.modules.auth.models import User
-from app.modules.profile.schemas import UserProfileResponse, UserProfileUpdateRequest
+from app.modules.profile.schemas import UserProfileResponse, UserProfileUpdateRequest, SocialPlatformResponse
 from app.modules.profile.services import (
     ensure_profile_layout_v2,
     get_profile_by_user_id,
@@ -58,3 +58,12 @@ def update_profile_by_user_id(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     return UserProfileResponse.model_validate(ensure_profile_layout_v2(updated_profile))
+
+
+@router.get("/platforms", response_model=list[SocialPlatformResponse])
+def get_active_platforms(db: Session = Depends(get_db)) -> list[SocialPlatformResponse]:
+    from app.modules.profile.models import SocialPlatform
+    from sqlalchemy import select
+    stmt = select(SocialPlatform).where(SocialPlatform.is_active == True).order_by(SocialPlatform.label.asc())
+    platforms = db.scalars(stmt).all()
+    return platforms

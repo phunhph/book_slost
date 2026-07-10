@@ -3,11 +3,11 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import AdminLayout from "@/layouts/AdminLayout.vue";
 import BookingsView from "@/views/BookingsView.vue";
-import CustomersView from "@/views/CustomersView.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import GoogleCallbackView from "@/views/GoogleCallbackView.vue";
-import KolsView from "@/views/KolsView.vue";
 import LoginView from "@/views/LoginView.vue";
+import UsersView from "@/views/UsersView.vue";
+import PlatformsView from "@/views/PlatformsView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -21,8 +21,8 @@ const router = createRouter({
       children: [
         { path: "", redirect: "/dashboard" },
         { path: "dashboard", component: DashboardView },
-        { path: "kols", component: KolsView },
-        { path: "customers", component: CustomersView },
+        { path: "users", component: UsersView },
+        { path: "platforms", component: PlatformsView },
         { path: "bookings", component: BookingsView }
       ]
     }
